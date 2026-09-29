@@ -1,0 +1,11 @@
+# BuildKit uses this file (next to backend/Dockerfile) instead of a root .dockerignore.
+**/.venv
+**/__pycache__
+**/*.pyc
+**/.pytest_cache
+**/node_modules
+frontend/
+.git
+.env
+data/clips/*
+!data/clips/.gitkeep
