@@ -1,0 +1,6 @@
+event_id,datetime,date,time,camera,zone,clip,hardhat,no_hardhat,total_person,violation,max_conf,frame_path,no_hardhat_max,no_hardhat_ratio
+EVT-0001,2026-09-21T12:05:00,2026-09-21,12:05,cam4,floor3,cam4_floor3_2026-09-21_1205.mp4,3,2,4,true,0.752,cam4_floor3_2026-09-21_1205.jpg,2,0.667
+EVT-0002,2026-09-24T10:25:00,2026-09-24,10:25,cam3,scaffold,cam3_scaffold_2026-09-24_1025.mp4,13,0,13,false,0.777,cam3_scaffold_2026-09-24_1025.jpg,1,0.133
+EVT-0003,2026-09-27T08:50:00,2026-09-27,08:50,cam2,crane,cam2_crane_2026-09-27_0850.mp4,3,4,6,true,0.786,cam2_crane_2026-09-27_0850.jpg,4,1.000
+EVT-0004,2026-09-28T13:40:00,2026-09-28,13:40,cam1,warehouse,cam1_warehouse_2026-09-28_1340.mp4,11,0,11,false,0.736,cam1_warehouse_2026-09-28_1340.jpg,0,0.000
+EVT-0005,2026-09-30T07:15:00,2026-09-30,07:15,cam1,entrance,cam1_entrance_2026-09-30_0715.mp4,8,0,8,false,0.631,cam1_entrance_2026-09-30_0715.jpg,0,0.000

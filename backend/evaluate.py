@@ -4,9 +4,13 @@ Generates questions with pandas ground truth from the loaded event log, asks the
 assistant through the same context path as chat (non-streaming), and checks whether the
 expected number/label appears in the answer.
 
-Usage: ``python -m backend.evaluate [--mock] [--n 15]``. The mock LLM is used when
-``--mock`` is passed or ``LLM_API_KEY`` is not set; it answers by pattern-matching the
-question against the precomputed aggregates, so the pipeline always runs end-to-end.
+Usage: ``python -m backend.evaluate [--mock] [--full-context] [--n 15]``. ``--mock`` uses a
+mock LLM that answers by pattern-matching the question against the precomputed aggregates, so
+the pipeline runs end-to-end without an API key. ``--full-context`` skips retrieval and sends the
+whole log and every regulation paragraph (the baseline for the context-size comparison).
+
+Results: ``data/eval_results_mock.csv`` (--mock), ``data/eval_results_selected.csv`` (real LLM,
+selected context) or ``data/eval_results_full.csv`` (real LLM, --full-context).
 """
 from __future__ import annotations
 
@@ -16,11 +20,13 @@ import re
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
+from datetime import datetime
+from pathlib import Path
 from typing import Any, Literal
 
 import pandas as pd
 
-from backend import aggregates, assistant, config, data, llm
+from backend import aggregates, assistant, config, data, llm, retrieval
 from backend.config import ZONE_LABELS, zone_label
 from backend.models import ChatMessage
 from backend.textfmt import hour_label, pct
@@ -188,6 +194,37 @@ class MockLLM:
         return None
 
 
+# --- full context (baseline) ---------------------------------------------------------
+
+def full_context_messages(question: str, df: pd.DataFrame, data_source: str) -> tuple[list[dict[str, str]], dict[str, Any]]:
+    """Same system prompt as chat, but the context holds every log row and every regulation
+    paragraph instead of the rows and paragraphs retrieval would select."""
+    source_label = "บันทึกจริงจากระบบตรวจจับ" if data_source == "real" else "ข้อมูลตัวอย่าง (sample)"
+    header = f"วันที่ปัจจุบัน: {datetime.now():%Y-%m-%d} | โครงการ: {config.site_name()} | แหล่งข้อมูล: {source_label}"
+    newest = df.sort_values("datetime", ascending=False)
+    lines = [assistant.event_line(r) for r in newest.to_dict("records")] or ["(ไม่มี)"]
+    log = "\n".join([f"## เหตุการณ์ทั้งหมดในบันทึก ({len(df)} รายการ)", "ใช้สำหรับอ้างรายละเอียดเหตุการณ์ ห้ามใช้นับจำนวน", *lines])
+    paras = retrieval.all_paragraphs()
+    body = "\n\n".join(f"### [{p.file}] {p.title}\n{p.text}" for p in paras)
+    regs = f"## เอกสารกฎระเบียบที่เกี่ยวข้อง (ทั้งหมด {len(paras)} ย่อหน้า)\n\n{body}"
+    context = "\n\n".join([header, assistant.aggregates_text(df, data_source), log, regs])
+    system = assistant.SYSTEM_PROMPT.format(
+        site=config.site_name(), zone_names=assistant.zone_names_text("th"), context=context
+    )
+    messages = [{"role": "system", "content": system}, {"role": "user", "content": question}]
+    sources = {
+        "log_rows": len(df), "regulation_paragraphs": len(paras),
+        "token_estimate": assistant.estimate_tokens("".join(m["content"] for m in messages)),
+    }
+    return messages, sources
+
+
+def results_path(use_mock: bool, full_context: bool) -> Path:
+    """Each mode writes its own file so a mock run never overwrites real-LLM results."""
+    name = "mock" if use_mock else ("full" if full_context else "selected")
+    return config.data_dir() / f"eval_results_{name}.csv"
+
+
 # --- runner --------------------------------------------------------------------------
 
 RESULT_COLUMNS = [
@@ -196,7 +233,12 @@ RESULT_COLUMNS = [
 ]
 
 
-def run(n: int, use_mock: bool, on_result: Callable[[int, dict[str, Any]], None] | None = None) -> pd.DataFrame:
+def run(
+    n: int,
+    use_mock: bool,
+    on_result: Callable[[int, dict[str, Any]], None] | None = None,
+    full_context: bool = False,
+) -> pd.DataFrame:
     """Ask the questions one at a time. Real LLM calls go through llm.py, so the LLM_RPM
     throttle, 429/503 retries and the fallback provider all apply."""
     log = data.load_events()
@@ -204,7 +246,12 @@ def run(n: int, use_mock: bool, on_result: Callable[[int, dict[str, Any]], None]
     mock = MockLLM(log.df) if use_mock else None
     rows: list[dict[str, Any]] = []
     for i, case in enumerate(cases, 1):
-        messages, sources = assistant.build_messages([ChatMessage(role="user", content=case.question)], log.df, log.source)
+        if full_context:
+            messages, sources = full_context_messages(case.question, log.df, log.source)
+        else:
+            messages, sources = assistant.build_messages(
+                [ChatMessage(role="user", content=case.question)], log.df, log.source
+            )
         started = time.perf_counter()
         info = llm.CallInfo(provider=None, model="mock" if mock else None)
         try:
@@ -238,11 +285,16 @@ def _short(text: str, width: int) -> str:
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Evaluate the safety assistant's factual accuracy.")
     parser.add_argument("--mock", action="store_true", help="use the pattern-matching mock LLM")
+    parser.add_argument("--full-context", action="store_true",
+                        help="send the whole log and all regulation paragraphs instead of the retrieved subset")
     parser.add_argument("--n", type=int, default=15, help="number of questions (default 15)")
     args = parser.parse_args(argv)
     logging.basicConfig(level=logging.WARNING, format="%(levelname)s %(name)s: %(message)s")
 
-    use_mock = args.mock or not llm.is_configured()
+    use_mock = args.mock
+    if not use_mock and not llm.is_configured():
+        print("ยังไม่ได้ตั้งค่า LLM_API_KEY — ใช้ --mock เพื่อประเมินด้วย mock LLM")
+        return 1
     settings = config.get_settings()
     if use_mock:
         mode = "mock"
@@ -250,7 +302,8 @@ def main(argv: list[str] | None = None) -> int:
         rpm = f"{settings.llm_rpm:g} RPM" if settings.llm_rpm > 0 else "no throttle"
         fb = f", fallback {settings.llm_fallback_model}" if llm.fallback_configured() else ""
         mode = f"LLM {settings.llm_model}, {rpm}{fb}"
-    print(f"\nประเมินผู้ช่วย ({mode}) — ถามทีละข้อ\n", flush=True)
+    context_mode = "full context" if args.full_context else "selected context"
+    print(f"\nประเมินผู้ช่วย ({mode}, {context_mode}) — ถามทีละข้อ\n", flush=True)
 
     def show(i: int, r: dict[str, Any]) -> None:
         mark = "PASS" if r["correct"] else "FAIL"
@@ -259,7 +312,7 @@ def main(argv: list[str] | None = None) -> int:
         print(f"      expected: {r['expected']} | answer: {_short(r['answer'], 90)}", flush=True)
 
     started = time.perf_counter()
-    results = run(args.n, use_mock, on_result=show)
+    results = run(args.n, use_mock, on_result=show, full_context=args.full_context)
     if results.empty:
         print("ไม่มีข้อมูลเหตุการณ์สำหรับการประเมิน")
         return 0
@@ -270,8 +323,11 @@ def main(argv: list[str] | None = None) -> int:
           + (f"  ({errors} call(s) failed)" if errors else ""))
     print(f"Elapsed: {elapsed:.1f}s  (retries {int(results['retries'].sum())}, "
           f"waiting on throttle/backoff {results['waited_s'].sum():.1f}s)")
+    tokens = pd.to_numeric(results["prompt_tokens"], errors="coerce")
+    print(f"Prompt tokens: mean {tokens.mean():.0f} (provider-reported)" if tokens.notna().any()
+          else f"Prompt tokens: not reported; estimate mean {results['token_estimate'].mean():.0f}")
 
-    out = config.eval_results_csv()
+    out = results_path(use_mock, args.full_context)
     out.parent.mkdir(parents=True, exist_ok=True)
     results.to_csv(out, index=False, encoding="utf-8")
     print(f"Saved: {out}")

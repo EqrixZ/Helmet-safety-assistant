@@ -1,0 +1,11 @@
+clip,model,helmet,head,head_frame_ratio,violation,avg_conf,infer_fps,sampled_frames
+cam1_entrance_2026-09-30_0715.mp4,yolo26s,8,0,0.0,False,0.548,6.6,5
+cam1_entrance_2026-09-30_0715.mp4,yolov8n (HF),6,0,0.0,False,0.604,50.6,5
+cam1_warehouse_2026-09-28_1340.mp4,yolo26s,11,0,0.0,False,0.564,30.5,15
+cam1_warehouse_2026-09-28_1340.mp4,yolov8n (HF),7,0,0.0,False,0.613,62.3,15
+cam2_crane_2026-09-27_0850.mp4,yolo26s,3,4,1.0,True,0.65,31.2,9
+cam2_crane_2026-09-27_0850.mp4,yolov8n (HF),4,0,0.0,False,0.501,62.6,9
+cam3_scaffold_2026-09-24_1025.mp4,yolo26s,13,1,0.133,False,0.569,30.7,15
+cam3_scaffold_2026-09-24_1025.mp4,yolov8n (HF),20,0,0.0,False,0.577,61.6,15
+cam4_floor3_2026-09-21_1205.mp4,yolo26s,3,2,0.667,True,0.602,31.0,15
+cam4_floor3_2026-09-21_1205.mp4,yolov8n (HF),2,0,0.0,False,0.456,62.2,15
