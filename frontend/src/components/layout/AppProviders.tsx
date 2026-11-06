@@ -2,6 +2,7 @@ import { type ReactNode, useCallback, useEffect, useMemo, useState } from 'react
 import { api } from '@/api/endpoints'
 import type { Health } from '@/api/types'
 import { TooltipProvider } from '@/components/ui/tooltip'
+import { ThemeProvider } from '@/hooks/useTheme'
 import { Toaster } from '@/components/ui/sonner'
 import { AppStatusContext, DEFAULT_SITE_NAME } from '@/hooks/useAppStatus'
 import { DataVersionContext } from '@/hooks/useDataVersion'
@@ -59,19 +60,28 @@ export function AppProviders({ children }: { children: ReactNode }) {
   }, [version])
 
   const status = useMemo(
-    () => ({ health, healthChecked, backendOnline, siteName, setSiteName, refreshHealth }),
+    () => ({
+      health,
+      healthChecked,
+      backendOnline,
+      siteName,
+      setSiteName,
+      refreshHealth,
+    }),
     [health, healthChecked, backendOnline, siteName, refreshHealth],
   )
   const dataVersion = useMemo(() => ({ version, invalidate }), [version, invalidate])
 
   return (
-    <DataVersionContext.Provider value={dataVersion}>
-      <AppStatusContext.Provider value={status}>
-        <TooltipProvider delayDuration={200}>
-          {children}
-          <Toaster />
-        </TooltipProvider>
-      </AppStatusContext.Provider>
-    </DataVersionContext.Provider>
+    <ThemeProvider>
+      <DataVersionContext.Provider value={dataVersion}>
+        <AppStatusContext.Provider value={status}>
+          <TooltipProvider delayDuration={200}>
+            {children}
+            <Toaster />
+          </TooltipProvider>
+        </AppStatusContext.Provider>
+      </DataVersionContext.Provider>
+    </ThemeProvider>
   )
 }

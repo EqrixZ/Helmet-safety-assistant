@@ -2,7 +2,7 @@ import { cn } from '@/lib/utils'
 
 export function ConfidenceBar({ value }: { value: number }) {
   const pct = Math.round(value * 100)
-  const tone = value >= 0.75 ? 'bg-emerald-500' : value >= 0.5 ? 'bg-amber-500' : 'bg-rose-400'
+  const tone = value >= 0.75 ? 'bg-tile-green' : value >= 0.5 ? 'bg-tile-orange' : 'bg-tile-red'
   return (
     <div className="flex items-center gap-2">
       <div className="h-1.5 w-14 overflow-hidden rounded-full bg-slate-100">

@@ -8,6 +8,7 @@ services:
         required: false
     environment:
       - DATA_DIR=/app/data
+      - TZ=${TZ:-Asia/Bangkok}   # report timestamps in site-local time (container default is UTC)
     volumes:
       - ./data:/app/data
       - hf-cache:/root/.cache/huggingface

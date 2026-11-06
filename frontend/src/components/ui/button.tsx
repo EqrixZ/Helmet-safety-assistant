@@ -8,13 +8,13 @@ export const buttonVariants = cva(
   {
     variants: {
       variant: {
-        default: 'bg-primary text-primary-foreground shadow-sm shadow-primary/30 hover:bg-[#e07b17]',
+        default: 'bg-action text-action-foreground hover:brightness-95',
         destructive: 'bg-destructive text-white shadow-sm hover:bg-destructive/90',
-        outline: 'border border-border bg-white shadow-xs hover:bg-slate-50 hover:text-foreground',
+        outline: 'border border-slate-200 bg-card text-slate-600 hover:bg-slate-50 hover:text-navy',
         secondary: 'bg-secondary text-secondary-foreground hover:bg-slate-200',
         ghost: 'hover:bg-slate-100 hover:text-foreground',
         link: 'text-primary underline-offset-4 hover:underline',
-        dark: 'bg-slate-900 text-white hover:bg-slate-800',
+        dark: 'bg-navy text-card hover:bg-slate-800',
       },
       size: {
         default: 'h-9 px-4 py-2',

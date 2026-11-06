@@ -1,0 +1,216 @@
+/*
+ * Design tokens — the single source for colours, radii and shadows, in light (:root) and
+ * dark ([data-theme="dark"]) variants. Every colour is a CSS variable so the theme can switch at
+ * runtime; Tailwind utilities map to these through @theme below. Charts read the resolved values
+ * with useChartTheme() (SVG attributes can't take var()).
+ */
+
+:root {
+  color-scheme: light;
+
+  /* Base */
+  --background: #f4f6fb;          /* app background */
+  --surface: #ffffff;             /* cards, sidebar, top-bar pills, inputs */
+  --surface-elevated: #ffffff;    /* popovers, tooltips on cards, drawer */
+  --border: #e7ebf3;              /* separators, input borders */
+  --text-primary: #1f2a44;        /* headings, primary text (navy) */
+  --text-secondary: #8a94a6;      /* captions, secondary text, axis labels */
+
+  /* Brand / semantic */
+  --primary: #5b7cfa;             /* accent: links, focus, charts, selected states */
+  --success: #3cc98a;             /* action buttons, "ok" */
+  --warning: #f28c28;
+  --danger: #f26b6b;
+
+  /* Solid icon tiles (KPI cards, zone cards) */
+  --tile-blue: var(--primary);
+  --tile-green: var(--success);
+  --tile-orange: var(--warning);
+  --tile-red: var(--danger);
+
+  /* Soft tints + readable ink on them (≥ 4.5:1) */
+  --blue-soft: #eef2ff;
+  --green-soft: #e8f8f0;
+  --orange-soft: #fef1e4;
+  --red-soft: #fdeded;
+  --blue-ink: #3f5fe0;
+  --green-ink: #1c8a5a;
+  --orange-ink: #b8620e;
+  --red-ink: #cf3f3f;
+
+  /* Neutral scale (Tailwind "slate" is remapped to it) */
+  --slate-50: #f4f6fb;
+  --slate-100: #eef1f7;
+  --slate-200: #e3e7ef;
+  --slate-300: #cdd3df;
+  --slate-400: #a7b0c0;
+  --slate-500: #8a94a6;
+  --slate-600: #5f6b82;
+  --slate-700: #3f4a63;
+  --slate-800: #2a3552;
+  --slate-900: #1f2a44;
+  --slate-950: #151d31;
+
+  /* Charts */
+  --chart-total: #c3cbda;
+  --chart-grid: #e7ebf3;
+  --chart-violet: #a78bfa;
+  --glow: rgba(91, 124, 250, 0.1);
+
+  /* Shadows */
+  --shadow-card: 0 8px 24px rgba(30, 40, 80, 0.06);
+  --shadow-soft: 0 4px 14px rgba(30, 40, 80, 0.06);
+  --shadow-sidebar: 4px 0 24px rgba(30, 40, 80, 0.05);
+
+  /* Radii */
+  --radius-card: 16px;
+  --radius-control: 8px;
+
+  /* shadcn-style aliases used by the ui/ primitives */
+  --foreground: var(--text-primary);
+  --card: var(--surface);
+  --card-foreground: var(--text-primary);
+  --popover: var(--surface-elevated);
+  --popover-foreground: var(--text-primary);
+  --primary-foreground: #ffffff;
+  --action: var(--success);
+  --action-foreground: #ffffff;
+  --secondary: var(--slate-100);
+  --secondary-foreground: var(--text-primary);
+  --muted: var(--slate-100);
+  --muted-foreground: var(--text-secondary);
+  --accent: var(--slate-100);
+  --accent-foreground: var(--text-primary);
+  --destructive: var(--danger);
+  --destructive-foreground: #ffffff;
+  --input: var(--border);
+  --ring: var(--primary);
+}
+
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  --background: #0f141f;
+  --surface: #171d2b;
+  --surface-elevated: #1e2637;
+  --border: #262f42;
+  --text-primary: #e6eaf2;
+  --text-secondary: #8a94a6;
+
+  /* Pastel tiles slightly desaturated so they don't glow on dark */
+  --tile-blue: #5a74d8;
+  --tile-green: #3aae7d;
+  --tile-orange: #d9822d;
+  --tile-red: #d66666;
+
+  --blue-soft: rgba(91, 124, 250, 0.16);
+  --green-soft: rgba(60, 201, 138, 0.15);
+  --orange-soft: rgba(242, 140, 40, 0.16);
+  --red-soft: rgba(242, 107, 107, 0.16);
+  --blue-ink: #9db0ff;
+  --green-ink: #7fdcb2;
+  --orange-ink: #f6b574;
+  --red-ink: #f5a0a0;
+
+  /* Inverted neutral scale: dark fills at the low end, light text at the high end */
+  --slate-50: #1a2130;
+  --slate-100: #1f2737;
+  --slate-200: #293246;
+  --slate-300: #36405a;
+  --slate-400: #5d687f;
+  --slate-500: #8a94a6;
+  --slate-600: #a3acbd;
+  --slate-700: #c0c7d4;
+  --slate-800: #d5dae4;
+  --slate-900: #e6eaf2;
+  --slate-950: #f1f4f9;
+
+  --chart-total: #465169;
+  --chart-grid: #263045;
+  --chart-violet: #8f7ad9;
+  --glow: rgba(91, 124, 250, 0.07);
+
+  --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.28);
+  --shadow-soft: 0 4px 14px rgba(0, 0, 0, 0.24);
+  --shadow-sidebar: 4px 0 24px rgba(0, 0, 0, 0.3);
+}
+
+@theme inline {
+  --font-sans: 'Inter', 'Noto Sans Thai', ui-sans-serif, system-ui, sans-serif;
+  --font-serif: 'Noto Serif Thai', 'Inter', 'Noto Sans Thai', Georgia, serif;
+
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-elevated: var(--surface-elevated);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-action: var(--action);
+  --color-action-foreground: var(--action-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-navy: var(--text-primary);
+  --color-caption: var(--text-secondary);
+  --color-page: var(--background);
+  --color-tile-blue: var(--tile-blue);
+  --color-tile-green: var(--tile-green);
+  --color-tile-orange: var(--tile-orange);
+  --color-tile-red: var(--tile-red);
+  --color-blue-soft: var(--blue-soft);
+  --color-green-soft: var(--green-soft);
+  --color-orange-soft: var(--orange-soft);
+  --color-red-soft: var(--red-soft);
+  --color-blue-ink: var(--blue-ink);
+  --color-green-ink: var(--green-ink);
+  --color-orange-ink: var(--orange-ink);
+  --color-red-ink: var(--red-ink);
+  --color-glow: var(--glow);
+
+  --color-slate-50: var(--slate-50);
+  --color-slate-100: var(--slate-100);
+  --color-slate-200: var(--slate-200);
+  --color-slate-300: var(--slate-300);
+  --color-slate-400: var(--slate-400);
+  --color-slate-500: var(--slate-500);
+  --color-slate-600: var(--slate-600);
+  --color-slate-700: var(--slate-700);
+  --color-slate-800: var(--slate-800);
+  --color-slate-900: var(--slate-900);
+  --color-slate-950: var(--slate-950);
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+  --radius-lg: var(--radius-control);
+  --radius-xl: var(--radius-card);
+  --radius-2xl: var(--radius-card);
+
+  --shadow-card: var(--shadow-card);
+  --shadow-soft: var(--shadow-soft);
+  --shadow-sidebar: var(--shadow-sidebar);
+}
+
+/* 150 ms colour fade while switching themes only (class added briefly by useTheme). */
+html.theme-transition,
+html.theme-transition *,
+html.theme-transition *::before,
+html.theme-transition *::after {
+  transition:
+    background-color 150ms ease,
+    color 150ms ease,
+    border-color 150ms ease,
+    fill 150ms ease,
+    stroke 150ms ease !important;
+}

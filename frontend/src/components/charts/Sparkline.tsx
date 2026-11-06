@@ -1,7 +1,11 @@
+import { useTranslation } from 'react-i18next'
 import { Area, AreaChart, ResponsiveContainer, Tooltip } from 'recharts'
+import { useChartTheme } from './palette'
 import { ChartTooltipBox } from './ChartTooltip'
 
 export function Sparkline({ values, color, id }: { values: number[]; color: string; id: string }) {
+  const c = useChartTheme()
+  const { t } = useTranslation()
   const data = values.map((v, i) => ({ i, v, ago: values.length - 1 - i }))
   return (
     <ResponsiveContainer width="100%" height="100%">
@@ -13,14 +17,14 @@ export function Sparkline({ values, color, id }: { values: number[]; color: stri
           </linearGradient>
         </defs>
         <Tooltip
-          cursor={{ stroke: '#CBD5E1' }}
+          cursor={{ stroke: c.total }}
           content={({ active, payload }) => {
             const row = payload?.[0]?.payload as { v: number; ago: number } | undefined
             if (!active || !row) return null
             return (
               <ChartTooltipBox
-                title={row.ago === 0 ? 'วันล่าสุด' : `${row.ago} วันก่อน`}
-                rows={[{ label: 'ละเมิด', value: String(row.v), color }]}
+                title={row.ago === 0 ? t('charts.latestDay') : t('charts.daysAgo', { count: row.ago })}
+                rows={[{ label: t('zones.card.sparkViolations'), value: String(row.v), color }]}
               />
             )
           }}

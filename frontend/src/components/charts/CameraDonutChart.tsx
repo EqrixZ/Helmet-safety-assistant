@@ -1,13 +1,16 @@
+import { useTranslation } from 'react-i18next'
 import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from 'recharts'
 import type { AggregateRow } from '@/api/types'
 import { cameraLabel, formatNumber, formatPercent } from '@/lib/format'
 import { ChartTooltipBox } from './ChartTooltip'
-import { categoricalColor } from './palette'
+import { useChartTheme, categoricalColor } from './palette'
 
 export function CameraDonutChart({ data }: { data: AggregateRow[] }) {
+  const c = useChartTheme()
+  const { t } = useTranslation()
   // Stable colour per camera (by sorted key), not by rank.
   const keys = [...data.map((d) => d.key)].sort()
-  const colorOf = (k: string) => categoricalColor(keys.indexOf(k))
+  const colorOf = (k: string) => categoricalColor(c, keys.indexOf(k))
   const rows = data.filter((d) => d.violations > 0)
   const total = data.reduce((s, d) => s + d.violations, 0)
 
@@ -24,9 +27,9 @@ export function CameraDonutChart({ data }: { data: AggregateRow[] }) {
                   <ChartTooltipBox
                     title={cameraLabel(row.key)}
                     rows={[
-                      { label: 'ละเมิด', value: formatNumber(row.violations), color: colorOf(row.key) },
-                      { label: 'สัดส่วน', value: formatPercent(total ? row.violations / total : 0) },
-                      { label: 'เหตุการณ์ทั้งหมด', value: formatNumber(row.events) },
+                      { label: t('charts.violations'), value: formatNumber(row.violations), color: colorOf(row.key) },
+                      { label: t('charts.share'), value: formatPercent(total ? row.violations / total : 0) },
+                      { label: t('charts.totalEvents'), value: formatNumber(row.events) },
                     ]}
                   />
                 )
@@ -40,7 +43,7 @@ export function CameraDonutChart({ data }: { data: AggregateRow[] }) {
               outerRadius="92%"
               paddingAngle={2}
               cornerRadius={4}
-              stroke="#fff"
+              stroke={c.surface}
               strokeWidth={2}
             >
               {rows.map((r) => (
@@ -51,7 +54,7 @@ export function CameraDonutChart({ data }: { data: AggregateRow[] }) {
         </ResponsiveContainer>
         <div className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
           <div className="text-2xl font-bold text-slate-900 tabular-nums">{formatNumber(total)}</div>
-          <div className="text-[11px] text-slate-500">ครั้งที่ละเมิด</div>
+          <div className="text-[11px] text-slate-500">{t('charts.violationCount')}</div>
         </div>
       </div>
       <ul className="grid grid-cols-2 gap-x-4 gap-y-2 sm:w-40 sm:grid-cols-1">

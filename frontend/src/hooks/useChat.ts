@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react'
 import { streamChat } from '@/api/chat'
 import { ApiError, toErrorMessage } from '@/api/client'
+import i18n, { currentLang } from '@/i18n'
 import type { ChatMessage, ContextSources } from '@/api/types'
 
 const STORAGE_KEY = 'hsa.chat.v1'
@@ -14,7 +15,8 @@ export type UiMessage = ChatMessage & {
   stopped?: boolean
 }
 
-export type ChatFailure = { kind: 'llm_not_configured' | 'error'; message: string }
+/** `error` is kept raw so it is translated at render time (see describeError). */
+export type ChatFailure = { kind: 'llm_not_configured' | 'error'; error: unknown }
 
 function uid(): string {
   return Math.random().toString(36).slice(2, 10) + Date.now().toString(36)
@@ -78,7 +80,7 @@ export function useChat() {
 
       try {
         await streamChat(
-          history,
+          { messages: history, language: currentLang() },
           (evt) => {
             switch (evt.type) {
               case 'sources':
@@ -88,7 +90,7 @@ export function useChat() {
                 patchAssistant(assistantId, (m) => ({ content: m.content + evt.content }))
                 break
               case 'error':
-                patchAssistant(assistantId, () => ({ error: evt.message }))
+                patchAssistant(assistantId, () => ({ error: `${i18n.t('assistant.message.streamError')} — ${evt.message}` }))
                 break
               case 'done':
                 patchAssistant(assistantId, () => ({ streaming: false }))
@@ -102,7 +104,7 @@ export function useChat() {
           patchAssistant(assistantId, () => ({ streaming: false, stopped: true }))
         } else if (err instanceof ApiError && err.isLlmNotConfigured) {
           setMessages((prev) => prev.filter((m) => m.id !== assistantId))
-          setFailure({ kind: 'llm_not_configured', message: err.message })
+          setFailure({ kind: 'llm_not_configured', error: err })
         } else {
           patchAssistant(assistantId, () => ({ streaming: false, error: toErrorMessage(err) }))
         }

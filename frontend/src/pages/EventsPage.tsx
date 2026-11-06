@@ -1,4 +1,5 @@
 import { Download } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { api } from '@/api/endpoints'
 import { ErrorState } from '@/components/common/ErrorState'
 import { PageContainer, PageHeader } from '@/components/common/PageHeader'
@@ -20,6 +21,7 @@ function toCsv(rows: Event[]): string {
 }
 
 export function EventsPage() {
+  const { t } = useTranslation()
   const { query, selectedId, update, toggleSort, clear, activeFilterCount } = useEventQuery()
   const list = useAsync((s) => api.events(query, s), [JSON.stringify(query)])
   const data = list.data
@@ -33,13 +35,15 @@ export function EventsPage() {
   return (
     <PageContainer>
       <PageHeader
-        title="บันทึกเหตุการณ์"
+        title={t('events.title')}
         description={
-          data ? `พบ ${formatNumber(data.total)} เหตุการณ์ตามตัวกรอง — คลิกแถวเพื่อดูรายละเอียดและภาพเฟรม` : 'รายการเหตุการณ์จากการตรวจจับหมวกนิรภัย'
+          data
+            ? t('events.descriptionCount', { count: data.total, total: formatNumber(data.total) })
+            : t('events.descriptionDefault')
         }
         actions={
           <Button variant="outline" onClick={() => void exportCsv()} disabled={!data || data.total === 0}>
-            <Download /> ส่งออก CSV
+            <Download /> {t('events.exportCsv')}
           </Button>
         }
       />

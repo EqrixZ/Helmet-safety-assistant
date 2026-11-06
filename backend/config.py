@@ -34,6 +34,15 @@ ZONE_LABELS: dict[str, str] = {
     "warehouse": "คลังวัสดุ",
 }
 
+# English names; sentences add the " zone" suffix via textfmt.zone_name(..., "en").
+ZONE_LABELS_EN: dict[str, str] = {
+    "entrance": "Entrance",
+    "crane": "Crane",
+    "scaffold": "Scaffold",
+    "floor3": "Floor 3",
+    "warehouse": "Warehouse",
+}
+
 load_dotenv(REPO_ROOT / ".env", override=False)
 logger = logging.getLogger(__name__)
 

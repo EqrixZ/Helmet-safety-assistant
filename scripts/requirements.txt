@@ -1,0 +1,2 @@
+# Extra dependency for scripts/prepare_clips.py (bundled ffmpeg with libx264); not needed by the backend.
+imageio-ffmpeg>=0.5

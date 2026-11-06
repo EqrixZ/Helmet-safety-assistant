@@ -1,4 +1,5 @@
 import { FilterX } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { api } from '@/api/endpoints'
 import type { EventQuery } from '@/api/types'
 import { DateRangePicker } from '@/components/common/DateRangePicker'
@@ -21,6 +22,7 @@ export function EventFilters({
   onClear: () => void
   activeCount: number
 }) {
+  const { t } = useTranslation()
   const { health } = useAppStatus()
   const zones = useAsync((s) => api.zones(s), [])
   const cameras = useAsync((s) => api.cameras(s), [])
@@ -38,11 +40,11 @@ export function EventFilters({
         bounds={health?.date_range ?? { min: null, max: null }}
       />
       <Select value={query.zone ?? ALL} onValueChange={(v) => onChange({ zone: v === ALL ? undefined : v })}>
-        <SelectTrigger className="w-40" aria-label="โซน">
-          <SelectValue placeholder="ทุกโซน" />
+        <SelectTrigger className="w-40" aria-label={t('events.filters.zone')}>
+          <SelectValue placeholder={t('events.filters.allZones')} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value={ALL}>ทุกโซน</SelectItem>
+          <SelectItem value={ALL}>{t('events.filters.allZones')}</SelectItem>
           {[...zoneKeys].sort().map((k) => (
             <SelectItem key={k} value={k}>
               {zoneLabel(k)}
@@ -51,11 +53,11 @@ export function EventFilters({
         </SelectContent>
       </Select>
       <Select value={query.camera ?? ALL} onValueChange={(v) => onChange({ camera: v === ALL ? undefined : v })}>
-        <SelectTrigger className="w-36" aria-label="กล้อง">
-          <SelectValue placeholder="ทุกกล้อง" />
+        <SelectTrigger className="w-36" aria-label={t('events.filters.camera')}>
+          <SelectValue placeholder={t('events.filters.allCameras')} />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value={ALL}>ทุกกล้อง</SelectItem>
+          <SelectItem value={ALL}>{t('events.filters.allCameras')}</SelectItem>
           {[...cameraKeys].sort().map((k) => (
             <SelectItem key={k} value={k}>
               {cameraLabel(k)}
@@ -64,18 +66,18 @@ export function EventFilters({
         </SelectContent>
       </Select>
       <Select value={violationValue} onValueChange={(v) => onChange({ violation: v === ALL ? undefined : v })}>
-        <SelectTrigger className="w-40" aria-label="สถานะ">
+        <SelectTrigger className="w-40" aria-label={t('events.filters.status')}>
           <SelectValue />
         </SelectTrigger>
         <SelectContent>
-          <SelectItem value={ALL}>ทุกสถานะ</SelectItem>
-          <SelectItem value="true">ไม่สวมหมวก</SelectItem>
-          <SelectItem value="false">ปลอดภัย</SelectItem>
+          <SelectItem value={ALL}>{t('events.filters.allStatuses')}</SelectItem>
+          <SelectItem value="true">{t('events.filters.noHardhat')}</SelectItem>
+          <SelectItem value="false">{t('events.filters.safe')}</SelectItem>
         </SelectContent>
       </Select>
       {activeCount > 0 && (
         <Button variant="ghost" size="sm" onClick={onClear} className="text-slate-500">
-          <FilterX /> ล้างตัวกรอง ({activeCount})
+          <FilterX /> {t('events.filters.clear', { count: activeCount })}
         </Button>
       )}
     </div>

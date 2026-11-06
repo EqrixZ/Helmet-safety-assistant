@@ -9,6 +9,7 @@ import type {
   EventQuery,
   GroupBy,
   Health,
+  Language,
   LlmTestResult,
   ModelInfo,
   Paginated,
@@ -19,6 +20,7 @@ import type {
   Settings,
   Stats,
   Suggestions,
+  SuggestionsRequest,
   UploadResult,
   ZoneSummary,
 } from './types'
@@ -47,10 +49,11 @@ export const api = {
 
   cameras: (signal?: AbortSignal) => request<AggregateRow[]>('/cameras', { signal }),
 
-  chatContext: (signal?: AbortSignal) => request<ContextSources>('/chat/context', { signal }),
+  chatContext: (language?: Language, signal?: AbortSignal) =>
+    request<ContextSources>('/chat/context', { query: { language }, signal }),
 
-  chatSuggestions: (signal?: AbortSignal) =>
-    request<Suggestions>('/chat/suggestions', { method: 'POST', json: {}, signal }),
+  chatSuggestions: (body: SuggestionsRequest = {}, signal?: AbortSignal) =>
+    request<Suggestions>('/chat/suggestions', { method: 'POST', json: body, signal }),
 
   createReport: (body: ReportRequest, signal?: AbortSignal) =>
     request<Report>('/reports', { method: 'POST', json: body, signal }),

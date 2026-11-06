@@ -1,27 +1,37 @@
 import { addDays, differenceInCalendarDays, format, parseISO } from 'date-fns'
+import i18n, { currentLang } from '@/i18n'
 
-export const ZONE_LABELS: Record<string, string> = {
-  entrance: 'ทางเข้า',
-  crane: 'เครน',
-  scaffold: 'นั่งร้าน',
-  floor3: 'ชั้น 3',
-  warehouse: 'คลังวัสดุ',
+/** Zone keys known to the UI; display names live in the translation files (`zoneNames`). */
+export const ZONE_KEYS = ['entrance', 'crane', 'scaffold', 'floor3', 'warehouse'] as const
+
+/** Intl locale for the active language: Thai uses the Buddhist-era calendar, English uses en-GB. */
+function locale(): string {
+  return currentLang() === 'th' ? 'th-TH' : 'en-GB'
 }
 
 export function zoneLabel(key: string): string {
-  if (key === 'unknown') return 'ไม่ทราบโซน'
-  return ZONE_LABELS[key] ?? key
+  if (key === 'unknown') return i18n.t('common.unknownZone')
+  return i18n.t(`zoneNames.${key}`, { defaultValue: key })
+}
+
+/** Zone name wrapped in the localized "zone" phrase, e.g. "Crane zone". */
+export function zoneWithName(key: string): string {
+  return i18n.t('common.zoneWithName', { name: zoneLabel(key) })
 }
 
 export function cameraLabel(key: string): string {
-  if (key === 'unknown') return 'ไม่ทราบกล้อง'
+  if (key === 'unknown') return i18n.t('common.unknownCamera')
   const m = /^cam(\d+)$/i.exec(key)
-  return m ? `กล้อง ${m[1]}` : key
+  return m ? i18n.t('common.camera', { id: m[1] }) : key
 }
 
-const nf = new Intl.NumberFormat('th-TH')
 export function formatNumber(n: number): string {
-  return nf.format(n)
+  return new Intl.NumberFormat(locale()).format(n)
+}
+
+/** Clock time with the localized suffix (Thai appends the "o'clock" abbreviation). */
+export function formatTime(time: string): string {
+  return i18n.t('common.time', { time })
 }
 
 export function formatPercent(ratio: number, digits = 1): string {
@@ -45,21 +55,21 @@ function safeParse(iso: string): Date | null {
   return Number.isNaN(d.getTime()) ? null : d
 }
 
-/** "29 ก.ย. 2569" */
-export function formatThaiDate(iso: string | null | undefined, style: 'short' | 'long' = 'short'): string {
+/** "29 Sep 2026" / Thai short month + Buddhist-era year */
+export function formatDate(iso: string | null | undefined, style: 'short' | 'long' = 'short'): string {
   if (!iso) return '—'
   const d = safeParse(iso)
   if (!d) return iso
-  return new Intl.DateTimeFormat('th-TH', {
+  return new Intl.DateTimeFormat(locale(), {
     day: 'numeric',
     month: style === 'long' ? 'long' : 'short',
     year: 'numeric',
   }).format(d)
 }
 
-/** "จันทร์ที่ 29 กันยายน 2569" */
-export function formatThaiFullDate(d: Date): string {
-  return new Intl.DateTimeFormat('th-TH', {
+/** "Tuesday 29 September 2026" / Thai long form with Buddhist-era year */
+export function formatFullDate(d: Date): string {
+  return new Intl.DateTimeFormat(locale(), {
     weekday: 'long',
     day: 'numeric',
     month: 'long',
@@ -67,19 +77,19 @@ export function formatThaiFullDate(d: Date): string {
   }).format(d)
 }
 
-/** "29 ก.ย." for chart axes */
-export function formatThaiDayMonth(iso: string): string {
+/** "29 Sep" for chart axes */
+export function formatDayMonth(iso: string): string {
   const d = safeParse(iso)
   if (!d) return iso
-  return new Intl.DateTimeFormat('th-TH', { day: 'numeric', month: 'short' }).format(d)
+  return new Intl.DateTimeFormat(locale(), { day: 'numeric', month: 'short' }).format(d)
 }
 
-/** "29 ก.ย. 2569 14:05" */
-export function formatThaiDateTime(iso: string | null | undefined): string {
+/** "29 Sep 2026, 14:05" */
+export function formatDateTime(iso: string | null | undefined): string {
   if (!iso) return '—'
   const d = safeParse(iso)
   if (!d) return iso
-  return new Intl.DateTimeFormat('th-TH', {
+  return new Intl.DateTimeFormat(locale(), {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -93,8 +103,8 @@ export function formatHourKey(key: string): string {
 }
 
 export function formatHourRange(key: string): string {
-  const h = Number(key)
-  return `${String(h).padStart(2, '0')}:00–${String(h).padStart(2, '0')}:59 น.`
+  const h = String(Number(key)).padStart(2, '0')
+  return i18n.t('common.hourRange', { from: `${h}:00`, to: `${h}:59` })
 }
 
 export function toIsoDate(d: Date): string {
@@ -114,7 +124,6 @@ export function daysBetweenInclusive(from: string, to: string): number {
 }
 
 export function riskLevel(rate: number): { label: string; tone: 'high' | 'medium' | 'low' } {
-  if (rate >= 0.4) return { label: 'สูง', tone: 'high' }
-  if (rate >= 0.2) return { label: 'กลาง', tone: 'medium' }
-  return { label: 'ต่ำ', tone: 'low' }
+  const tone = rate >= 0.4 ? 'high' : rate >= 0.2 ? 'medium' : 'low'
+  return { label: i18n.t(`risk.${tone}`), tone }
 }

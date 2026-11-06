@@ -273,7 +273,7 @@ def test_report_generation(client: TestClient, data_dir: Path, monkeypatch: pyte
     r = client.post("/api/reports", json={"type": "weekly", "date": "2026-09-23"})
     assert r.status_code == 200
     report = r.json()
-    assert report["name"] == "report_weekly_2026-09-23.md"
+    assert report["name"] == "report_weekly_2026-09-23_th.md" and report["language"] == "th"
     md = report["markdown"]
     positions = [md.index(f"## {s}") for s in ("บทสรุปผู้บริหาร", "การละเมิดแยกตามโซนและช่วงเวลา", "เหตุการณ์สำคัญ", "การประเมินความเสี่ยง", "ข้อเสนอแนะ")]
     assert positions == sorted(positions)

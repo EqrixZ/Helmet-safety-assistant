@@ -1,5 +1,6 @@
 import { Building2, Check, Loader2 } from 'lucide-react'
 import { type FormEvent, useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { toErrorMessage } from '@/api/client'
 import { api } from '@/api/endpoints'
@@ -10,6 +11,7 @@ import { useAppStatus } from '@/hooks/useAppStatus'
 import { SectionCard } from './SectionCard'
 
 export function SiteNameCard() {
+  const { t } = useTranslation()
   const { siteName, setSiteName } = useAppStatus()
   const [value, setValue] = useState(siteName)
   const [saving, setSaving] = useState(false)
@@ -24,22 +26,28 @@ export function SiteNameCard() {
     try {
       const s = await api.updateSettings({ site_name: value.trim() })
       setSiteName(s.site_name)
-      toast.success('บันทึกชื่อโครงการแล้ว')
+      toast.success(t('settings.site.saved'))
     } catch (err) {
-      toast.error('บันทึกไม่สำเร็จ', { description: toErrorMessage(err) })
+      toast.error(t('settings.site.saveFailed'), { description: toErrorMessage(err) })
     } finally {
       setSaving(false)
     }
   }
 
   return (
-    <SectionCard icon={Building2} title="ข้อมูลโครงการ" description="ชื่อนี้จะแสดงที่แถบด้านบนและในรายงาน">
+    <SectionCard icon={Building2} title={t('settings.site.title')} description={t('settings.site.description')}>
       <form onSubmit={(e) => void save(e)} className="space-y-1.5">
-        <Label htmlFor="site-name">ชื่อโครงการ / ไซต์งาน</Label>
+        <Label htmlFor="site-name">{t('settings.site.label')}</Label>
         <div className="flex gap-2">
-          <Input id="site-name" value={value} onChange={(e) => setValue(e.target.value)} maxLength={120} />
+          <Input
+            id="site-name"
+            value={value}
+            onChange={(e) => setValue(e.target.value)}
+            placeholder={t('common.defaultSiteName')}
+            maxLength={120}
+          />
           <Button type="submit" disabled={!dirty || saving}>
-            {saving ? <Loader2 className="animate-spin" /> : <Check />} บันทึก
+            {saving ? <Loader2 className="animate-spin" /> : <Check />} {t('settings.site.save')}
           </Button>
         </div>
       </form>

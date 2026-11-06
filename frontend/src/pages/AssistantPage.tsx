@@ -1,6 +1,8 @@
 import { Bot, PanelRight, Trash2 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { useLocation, useNavigate } from 'react-router-dom'
+import { describeError } from '@/api/client'
 import { api } from '@/api/endpoints'
 import { ChatInput } from '@/components/assistant/ChatInput'
 import { ContextPanel } from '@/components/assistant/ContextPanel'
@@ -12,6 +14,7 @@ import { Sheet, SheetContent, SheetTitle } from '@/components/ui/sheet'
 import { useAppStatus } from '@/hooks/useAppStatus'
 import { useAsync } from '@/hooks/useAsync'
 import { useChat } from '@/hooks/useChat'
+import { useLang } from '@/i18n'
 
 function readPrefill(state: unknown): string | null {
   if (typeof state === 'object' && state !== null && 'prefill' in state) {
@@ -21,7 +24,19 @@ function readPrefill(state: unknown): string | null {
   return null
 }
 
+function FailureNote({ error }: { error: unknown }) {
+  const { title, detail } = describeError(error)
+  return (
+    <div className="rounded-xl bg-red-soft p-4 text-sm text-red-ink">
+      {title}
+      {detail && <div className="mt-1 text-xs opacity-80">{detail}</div>}
+    </div>
+  )
+}
+
 export function AssistantPage() {
+  const { t } = useTranslation()
+  const lang = useLang()
   const location = useLocation()
   const navigate = useNavigate()
   const { health } = useAppStatus()
@@ -30,8 +45,9 @@ export function AssistantPage() {
   const [panelOpen, setPanelOpen] = useState(false)
   const scrollRef = useRef<HTMLDivElement>(null)
 
-  const suggestions = useAsync((s) => api.chatSuggestions(s), [])
-  const context = useAsync((s) => api.chatContext(s), [])
+  // Both come from the server in the active language; re-fetch when it changes.
+  const suggestions = useAsync((s) => api.chatSuggestions({ language: lang }, s), [lang])
+  const context = useAsync((s) => api.chatContext(lang, s), [lang])
   const sources = chat.sources ?? context.data
 
   // Consume router state so a refresh doesn't re-apply the prefill.
@@ -60,22 +76,22 @@ export function AssistantPage() {
   return (
     <div className="flex h-[calc(100dvh-4rem)] min-h-0">
       <div className="flex min-w-0 flex-1 flex-col">
-        <div className="flex items-center justify-between gap-3 border-b border-slate-200/80 bg-white/60 px-4 py-3 sm:px-6">
+        <div className="flex items-center justify-between gap-3 border-b border-slate-200/80 bg-card/60 px-4 py-3 sm:px-6">
           <div className="flex items-center gap-3">
-            <div className="grid size-9 place-items-center rounded-xl bg-slate-900 text-primary">
+            <div className="grid size-9 place-items-center rounded-xl bg-navy text-card">
               <Bot className="size-5" />
             </div>
             <div>
-              <h1 className="text-sm font-semibold text-slate-900">ผู้ช่วยความปลอดภัย AI</h1>
-              <p className="text-xs text-slate-500">{health ? `โมเดล ${health.llm_model}` : 'วิเคราะห์ข้อมูลการสวมหมวกนิรภัย'}</p>
+              <h1 className="text-sm font-semibold text-slate-900">{t('assistant.title')}</h1>
+              <p className="text-xs text-slate-500">{health ? t('assistant.model', { model: health.llm_model }) : t('assistant.subtitle')}</p>
             </div>
           </div>
           <div className="flex items-center gap-1">
             <Button variant="ghost" size="sm" onClick={chat.clear} disabled={empty && !chat.failure} className="text-slate-500">
-              <Trash2 /> <span className="hidden sm:inline">ล้างการสนทนา</span>
+              <Trash2 /> <span className="hidden sm:inline">{t('assistant.clear')}</span>
             </Button>
             <Button variant="outline" size="sm" className="xl:hidden" onClick={() => setPanelOpen(true)}>
-              <PanelRight /> <span className="hidden sm:inline">แหล่งข้อมูล</span>
+              <PanelRight /> <span className="hidden sm:inline">{t('assistant.sources')}</span>
             </Button>
           </div>
         </div>
@@ -86,13 +102,13 @@ export function AssistantPage() {
               <div className="animate-fade-in flex flex-col items-center pt-6 text-center sm:pt-12">
                 <div className="relative mb-5">
                   <div className="absolute inset-0 scale-150 rounded-full bg-primary/15 blur-2xl" />
-                  <div className="relative grid size-16 place-items-center rounded-2xl bg-gradient-to-br from-slate-800 to-slate-950 text-primary shadow-xl">
+                  <div className="relative grid size-16 place-items-center rounded-2xl bg-tile-blue text-white shadow-card">
                     <Bot className="size-8" />
                   </div>
                 </div>
-                <h2 className="text-xl font-bold text-slate-900">สวัสดีครับ มีอะไรให้ช่วยวิเคราะห์ไหม?</h2>
+                <h2 className="text-xl font-bold text-slate-900">{t('assistant.greeting')}</h2>
                 <p className="mt-2 max-w-md text-sm text-slate-500">
-                  ถามเกี่ยวกับสถิติการสวมหมวกนิรภัย โซนเสี่ยง ช่วงเวลาที่พบการละเมิด หรือข้อกฎหมายที่เกี่ยวข้อง
+                  {t('assistant.intro')}
                 </p>
                 {llmMissing && <LlmNotConfiguredCard className="mt-6 w-full text-left" />}
                 <div className="mt-8 w-full text-left">
@@ -105,9 +121,9 @@ export function AssistantPage() {
             ))}
             {chat.failure &&
               (chat.failure.kind === 'llm_not_configured' ? (
-                <LlmNotConfiguredCard message={chat.failure.message} />
+                <LlmNotConfiguredCard detail={describeError(chat.failure.error).detail} />
               ) : (
-                <div className="rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">{chat.failure.message}</div>
+                <FailureNote error={chat.failure.error} />
               ))}
           </div>
         </div>
@@ -125,7 +141,7 @@ export function AssistantPage() {
       <aside className="hidden w-80 shrink-0 border-l border-slate-200/80 bg-slate-50/80 xl:block">{panel}</aside>
       <Sheet open={panelOpen} onOpenChange={setPanelOpen}>
         <SheetContent className="max-w-sm bg-slate-50">
-          <SheetTitle className="sr-only">แหล่งข้อมูลในบริบท</SheetTitle>
+          <SheetTitle className="sr-only">{t('assistant.sourcesTitle')}</SheetTitle>
           {panel}
         </SheetContent>
       </Sheet>

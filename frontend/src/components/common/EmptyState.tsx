@@ -20,11 +20,11 @@ export function EmptyState({
   return (
     <div className={cn('animate-fade-in flex flex-col items-center justify-center px-6 py-12 text-center', className)}>
       <div className="relative mb-4">
-        <div className={cn('absolute inset-0 scale-150 rounded-full blur-xl', tone === 'danger' ? 'bg-rose-100' : 'bg-primary/10')} />
+        <div className={cn('absolute inset-0 scale-150 rounded-full blur-xl', tone === 'danger' ? 'bg-red-soft' : 'bg-blue-soft')} />
         <div
           className={cn(
-            'relative grid size-14 place-items-center rounded-2xl border bg-white shadow-sm',
-            tone === 'danger' ? 'border-rose-100 text-rose-500' : 'border-slate-200 text-slate-400',
+            'relative grid size-14 place-items-center rounded-2xl border bg-card shadow-sm',
+            tone === 'danger' ? 'border-red-soft text-tile-red' : 'border-slate-200 text-slate-400',
           )}
         >
           <Icon className="size-6" />

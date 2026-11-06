@@ -10,6 +10,7 @@ T = TypeVar("T")
 DataSource = Literal["real", "sample"]
 ReportType = Literal["daily", "weekly"]
 DetectState = Literal["idle", "running", "done", "error"]
+Language = Literal["th", "en"]
 
 DATE_PATTERN = r"^\d{4}-\d{2}-\d{2}$"
 
@@ -120,12 +121,14 @@ class ChatMessage(BaseModel):
 
 class ChatRequest(BaseModel):
     messages: list[ChatMessage] = Field(min_length=1)
+    language: Language = "th"
 
 
 class SuggestionsRequest(BaseModel):
     """Body of ``POST /api/chat/suggestions``; ``event_id`` is an optional extension."""
 
     event_id: str | None = None
+    language: Language = "th"
 
 
 class Suggestions(BaseModel):
@@ -135,6 +138,7 @@ class Suggestions(BaseModel):
 class ReportRequest(BaseModel):
     type: ReportType
     date: str = Field(pattern=DATE_PATTERN)
+    language: Language = "th"
 
 
 class Report(BaseModel):
@@ -143,6 +147,7 @@ class Report(BaseModel):
     date: str
     created_at: str
     markdown: str
+    language: Language = "th"           # legacy files without a language suffix are Thai
 
 
 class ReportMeta(BaseModel):
@@ -151,6 +156,7 @@ class ReportMeta(BaseModel):
     date: str
     created_at: str
     size: int
+    language: Language = "th"
 
 
 class DetectStatus(BaseModel):

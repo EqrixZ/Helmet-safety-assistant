@@ -1,4 +1,5 @@
 import { CalendarRange } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { DateRange } from '@/api/types'
 import { daysBetweenInclusive, shiftIsoDate } from '@/lib/format'
 import { cn } from '@/lib/utils'
@@ -16,13 +17,14 @@ export function DateRangePicker({
   bounds: Bounds
   className?: string
 }) {
+  const { t } = useTranslation()
   const max = bounds.max ?? undefined
   const min = bounds.min ?? undefined
   const presets: { label: string; range: DateRange }[] = max
     ? [
-        { label: '7 วัน', range: { from: shiftIsoDate(max, -6), to: max } },
-        { label: '14 วัน', range: { from: shiftIsoDate(max, -13), to: max } },
-        { label: 'ทั้งหมด', range: { from: min, to: max } },
+        { label: t('common.range7'), range: { from: shiftIsoDate(max, -6), to: max } },
+        { label: t('common.range14'), range: { from: shiftIsoDate(max, -13), to: max } },
+        { label: t('common.rangeAll'), range: { from: min, to: max } },
       ]
     : []
   const isActive = (r: DateRange) => r.from === value.from && r.to === value.to
@@ -37,18 +39,18 @@ export function DateRangePicker({
             onClick={() => onChange(p.range)}
             className={cn(
               'rounded-md px-2.5 py-1 text-xs font-medium transition-all',
-              isActive(p.range) ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800',
+              isActive(p.range) ? 'bg-card text-slate-900 shadow-sm' : 'text-slate-500 hover:text-slate-800',
             )}
           >
             {p.label}
           </button>
         ))}
       </div>
-      <div className="flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-white px-3 text-sm shadow-xs focus-within:border-primary focus-within:ring-[3px] focus-within:ring-primary/20">
+      <div className="flex h-9 items-center gap-2 rounded-lg border border-slate-200 bg-card px-3 text-sm shadow-xs focus-within:border-primary focus-within:ring-[3px] focus-within:ring-primary/20">
         <CalendarRange className="size-4 shrink-0 text-slate-400" />
         <input
           type="date"
-          aria-label="ตั้งแต่วันที่"
+          aria-label={t('common.dateFrom')}
           value={value.from ?? ''}
           min={min}
           max={value.to ?? max}
@@ -58,7 +60,7 @@ export function DateRangePicker({
         <span className="text-slate-300">→</span>
         <input
           type="date"
-          aria-label="ถึงวันที่"
+          aria-label={t('common.dateTo')}
           value={value.to ?? ''}
           min={value.from ?? min}
           max={max}
@@ -67,7 +69,7 @@ export function DateRangePicker({
         />
       </div>
       {value.from && value.to && (
-        <span className="text-xs text-slate-400">{daysBetweenInclusive(value.from, value.to)} วัน</span>
+        <span className="text-xs text-slate-400">{t('common.days', { count: daysBetweenInclusive(value.from, value.to) })}</span>
       )}
     </div>
   )

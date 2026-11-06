@@ -1,5 +1,8 @@
 import type { LucideIcon } from 'lucide-react'
 import type { ReactNode } from 'react'
+import { useTranslation } from 'react-i18next'
+import { Link } from 'react-router-dom'
+import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { ErrorState } from '@/components/common/ErrorState'
@@ -9,7 +12,7 @@ import { cn } from '@/lib/utils'
 export function ChartCard({
   title,
   description,
-  icon: Icon,
+  viewAllTo,
   loading,
   error,
   onRetry,
@@ -22,7 +25,8 @@ export function ChartCard({
 }: {
   title: string
   description?: string
-  icon?: LucideIcon
+  /** Route for the outlined "View all" button in the header. */
+  viewAllTo?: string
   loading: boolean
   error?: unknown
   onRetry?: () => void
@@ -33,21 +37,20 @@ export function ChartCard({
   legend?: ReactNode
   children: ReactNode
 }) {
+  const { t } = useTranslation()
   return (
     <Card className={cn('card-hover', className)}>
       <CardHeader>
-        <div className="flex items-start gap-3">
-          {Icon && (
-            <div className="grid size-8 shrink-0 place-items-center rounded-lg bg-slate-100 text-slate-500">
-              <Icon className="size-4" />
-            </div>
-          )}
-          <div>
-            <CardTitle>{title}</CardTitle>
-            {description && <CardDescription>{description}</CardDescription>}
-          </div>
+        <div className="min-w-0">
+          <CardTitle>{title}</CardTitle>
+          {description && <CardDescription>{description}</CardDescription>}
+          {legend && <div className="mt-2.5">{legend}</div>}
         </div>
-        {legend}
+        {viewAllTo && (
+          <Button asChild variant="outline" size="sm" className="shrink-0">
+            <Link to={viewAllTo}>{t('common.viewAll')}</Link>
+          </Button>
+        )}
       </CardHeader>
       <CardContent>
         <div style={{ height }} className="relative">
@@ -60,7 +63,8 @@ export function ChartCard({
           ) : error ? (
             <ErrorState error={error} onRetry={onRetry} className="h-full py-4" />
           ) : empty ? (
-            <EmptyState icon={emptyIcon} title="ไม่มีข้อมูลในช่วงเวลานี้" description="ลองเลือกช่วงวันที่อื่น" className="h-full py-4" />
+            <EmptyState icon={emptyIcon} title={t('common.noDataInRange')}
+              description={t('common.tryOtherRange')} className="h-full py-4" />
           ) : (
             children
           )}
@@ -72,8 +76,8 @@ export function ChartCard({
 
 export function LegendItem({ color, label }: { color: string; label: string }) {
   return (
-    <span className="flex items-center gap-1.5 text-xs text-slate-500">
-      <span className="size-2.5 rounded-sm" style={{ background: color }} />
+    <span className="flex items-center gap-1.5 text-xs text-caption">
+      <span className="size-2 rounded-full" style={{ background: color }} />
       {label}
     </span>
   )

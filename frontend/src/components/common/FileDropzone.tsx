@@ -1,5 +1,6 @@
 import { UploadCloud } from 'lucide-react'
 import { type DragEvent, type ReactNode, useRef, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 
 export function FileDropzone({
@@ -15,6 +16,7 @@ export function FileDropzone({
   title: string
   hint?: ReactNode
 }) {
+  const { t } = useTranslation()
   const inputRef = useRef<HTMLInputElement>(null)
   const [dragging, setDragging] = useState(false)
 
@@ -49,14 +51,14 @@ export function FileDropzone({
     >
       <div
         className={cn(
-          'mb-3 grid size-12 place-items-center rounded-xl bg-white shadow-sm ring-1 ring-slate-200 transition',
+          'mb-3 grid size-12 place-items-center rounded-xl bg-card shadow-sm ring-1 ring-slate-200 transition',
           dragging ? 'text-primary' : 'text-slate-400 group-hover:text-primary',
         )}
       >
         <UploadCloud className="size-6" />
       </div>
       <div className="text-sm font-medium text-slate-700">
-        {title} <span className="text-primary">หรือคลิกเพื่อเลือกไฟล์</span>
+        {title} <span className="text-primary">{t('common.dropzoneOr')}</span>
       </div>
       {hint && <div className="mt-1.5 text-xs text-slate-500">{hint}</div>}
       <input

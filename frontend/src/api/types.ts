@@ -2,6 +2,9 @@
 
 export type DataSource = 'real' | 'sample'
 
+/** UI / generated-content language sent to the backend. */
+export type Language = 'th' | 'en'
+
 export type Event = {
   event_id: string
   datetime: string
@@ -60,14 +63,30 @@ export type Health = {
 
 export type ChatRole = 'user' | 'assistant'
 export type ChatMessage = { role: ChatRole; content: string }
-export type ChatRequest = { messages: ChatMessage[] }
+export type ChatRequest = { messages: ChatMessage[]; language?: Language }
+export type SuggestionsRequest = { language?: Language }
 
 export type Suggestions = { questions: string[] }
 
 export type ReportType = 'daily' | 'weekly'
-export type ReportRequest = { type: ReportType; date: string }
-export type Report = { name: string; type: ReportType; date: string; created_at: string; markdown: string }
-export type ReportMeta = { name: string; type: ReportType; date: string; created_at: string; size: number }
+export type ReportRequest = { type: ReportType; date: string; language?: Language }
+// name: report_{type}_{date}_{lang}.md (legacy reports have no language suffix and language 'th')
+export type Report = {
+  name: string
+  type: ReportType
+  date: string
+  created_at: string
+  markdown: string
+  language: Language
+}
+export type ReportMeta = {
+  name: string
+  type: ReportType
+  date: string
+  created_at: string
+  size: number
+  language: Language
+}
 
 export type DetectState = 'idle' | 'running' | 'done' | 'error'
 export type DetectStatus = {
@@ -117,7 +136,7 @@ export type ContextSources = {
   regulation_paragraphs: string[] // "file · rule title" of each paragraph sent to the LLM
   regulation_paragraphs_total: number
   log_rows: number // event lines sent to the LLM
-  log_filter: string // how those rows were chosen (Thai)
+  log_filter: string // how those rows were chosen (in the requested language)
   token_estimate: number // prompt length / 3.5
 }
 

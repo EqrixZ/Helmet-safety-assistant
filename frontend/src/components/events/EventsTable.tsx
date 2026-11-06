@@ -1,25 +1,26 @@
 import { ArrowDown, ArrowUp, ArrowUpDown, SearchX } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import type { Event, EventQuery } from '@/api/types'
 import { EmptyState } from '@/components/common/EmptyState'
 import { FrameImage } from '@/components/common/FrameImage'
 import { ViolationBadge } from '@/components/common/StatusBadges'
 import { Button } from '@/components/ui/button'
 import { Skeleton } from '@/components/ui/skeleton'
-import { cameraLabel, formatThaiDate, zoneLabel } from '@/lib/format'
+import { cameraLabel, formatDate, zoneLabel } from '@/lib/format'
 import { cn } from '@/lib/utils'
 import { ConfidenceBar } from './ConfidenceBar'
 
-type Column = { key: string; label: string; sortable: boolean; align?: 'right' | 'center'; className?: string }
+type Column = { key: string; labelKey: string; sortable: boolean; align?: 'right' | 'center'; className?: string }
 
 const COLUMNS: Column[] = [
-  { key: 'date', label: 'วันที่', sortable: true },
-  { key: 'time', label: 'เวลา', sortable: true },
-  { key: 'camera', label: 'กล้อง', sortable: true },
-  { key: 'zone', label: 'โซน', sortable: true },
-  { key: 'hardhat', label: 'สวมหมวก', sortable: true, align: 'center' },
-  { key: 'no_hardhat', label: 'ไม่สวมหมวก', sortable: true, align: 'center' },
-  { key: 'violation', label: 'สถานะ', sortable: true },
-  { key: 'max_conf', label: 'ความมั่นใจ', sortable: true },
+  { key: 'date', labelKey: 'events.table.date', sortable: true },
+  { key: 'time', labelKey: 'events.table.time', sortable: true },
+  { key: 'camera', labelKey: 'events.table.camera', sortable: true },
+  { key: 'zone', labelKey: 'events.table.zone', sortable: true },
+  { key: 'hardhat', labelKey: 'events.table.hardhat', sortable: true, align: 'center' },
+  { key: 'no_hardhat', labelKey: 'events.table.noHardhat', sortable: true, align: 'center' },
+  { key: 'violation', labelKey: 'events.table.status', sortable: true },
+  { key: 'max_conf', labelKey: 'events.table.confidence', sortable: true },
 ]
 
 function SortIcon({ active, order }: { active: boolean; order: EventQuery['order'] }) {
@@ -44,25 +45,26 @@ export function EventsTable({
   selectedId: string | null
   onClear: () => void
 }) {
+  const { t } = useTranslation()
   // sort by 'datetime' shows as sorted by date
   const activeSort = query.sort === 'datetime' ? 'date' : query.sort
   return (
     <div className="scrollbar-thin overflow-x-auto">
       <table className="w-full min-w-[860px] text-sm">
         <thead>
-          <tr className="border-b bg-slate-50/80 text-left text-xs font-medium text-slate-500">
-            <th className="w-20 py-3 pl-5 font-medium">ภาพ</th>
+          <tr className="border-b border-slate-100 text-left text-xs font-medium text-caption">
+            <th className="w-20 py-3 pl-6 font-medium">{t('events.table.frame')}</th>
             {COLUMNS.map((c) => (
               <th key={c.key} className={cn('px-3 py-3 font-medium', c.align === 'center' && 'text-center')}>
                 <button
                   type="button"
                   onClick={() => onSort(c.key === 'date' ? 'datetime' : c.key)}
                   className={cn(
-                    'group inline-flex items-center gap-1 transition hover:text-slate-800',
-                    activeSort === c.key && 'text-slate-800',
+                    'group inline-flex items-center gap-1 transition hover:text-navy',
+                    activeSort === c.key && 'text-navy',
                   )}
                 >
-                  {c.label}
+                  {t(c.labelKey)}
                   <SortIcon active={activeSort === c.key} order={query.order} />
                 </button>
               </th>
@@ -73,8 +75,8 @@ export function EventsTable({
           {loading && !items
             ? Array.from({ length: 8 }, (_, i) => (
                 <tr key={i} className="border-b border-slate-100">
-                  <td className="py-2.5 pl-5">
-                    <Skeleton className="h-9 w-14 rounded-md" />
+                  <td className="h-14 pl-6">
+                    <Skeleton className="size-10 rounded-full" />
                   </td>
                   {COLUMNS.map((c) => (
                     <td key={c.key} className="px-3 py-2.5">
@@ -89,17 +91,17 @@ export function EventsTable({
                   onClick={() => onSelect(e)}
                   style={{ animationDelay: `${i * 20}ms` }}
                   className={cn(
-                    'animate-fade-in cursor-pointer border-b border-slate-100 transition-colors hover:bg-orange-50/40',
-                    selectedId === e.event_id && 'bg-orange-50/70',
+                    'animate-fade-in h-14 cursor-pointer border-b border-slate-100 transition-colors last:border-0 hover:bg-slate-50',
+                    selectedId === e.event_id && 'bg-blue-soft/70',
                     loading && 'opacity-60',
                   )}
                 >
-                  <td className="py-2 pl-5">
-                    <FrameImage src={e.frame_url} alt={e.event_id} compact className="h-9 w-14 rounded-md" />
+                  <td className="pl-6">
+                    <FrameImage src={e.frame_url} alt={e.event_id} compact className="size-10 rounded-full" />
                   </td>
                   <td className="px-3 py-2">
-                    <div className="font-medium text-slate-800">{formatThaiDate(e.date)}</div>
-                    <div className="text-[11px] text-slate-400">{e.event_id}</div>
+                    <div className="font-medium text-navy">{formatDate(e.date)}</div>
+                    <div className="text-[11px] text-caption">{e.event_id}</div>
                   </td>
                   <td className="px-3 py-2 text-slate-600 tabular-nums">{e.time}</td>
                   <td className="px-3 py-2 text-slate-600">{cameraLabel(e.camera)}</td>
@@ -108,7 +110,7 @@ export function EventsTable({
                   <td
                     className={cn(
                       'px-3 py-2 text-center tabular-nums',
-                      e.no_hardhat > 0 ? 'font-semibold text-rose-600' : 'text-slate-400',
+                      e.no_hardhat > 0 ? 'font-semibold text-red-ink' : 'text-slate-400',
                     )}
                   >
                     {e.no_hardhat}
@@ -126,11 +128,11 @@ export function EventsTable({
       {!loading && items?.length === 0 && (
         <EmptyState
           icon={SearchX}
-          title="ไม่พบเหตุการณ์ที่ตรงกับตัวกรอง"
-          description="ลองปรับช่วงวันที่ โซน หรือกล้อง"
+          title={t('events.table.emptyTitle')}
+          description={t('events.table.emptyDescription')}
           action={
             <Button variant="outline" size="sm" onClick={onClear}>
-              ล้างตัวกรองทั้งหมด
+              {t('events.table.clearAll')}
             </Button>
           }
         />

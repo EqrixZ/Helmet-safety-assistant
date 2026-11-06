@@ -17,3 +17,5 @@ data/settings.json
 .DS_Store
 backend/models/*.pt
 data/model_comparison.csv
+data/raw_clips/
+!data/clips/SOURCES.md

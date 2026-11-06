@@ -1,17 +1,48 @@
-// Chart palette: orange = violations (primary), slate = totals. Categorical order validated for CVD separation.
-export const CHART = {
-  violation: '#F28C28',
-  violationSoft: '#FDE3C8',
-  total: '#94A3B8',
-  totalSoft: '#E2E8F0',
-  grid: '#EEF2F6',
-  axis: '#94A3B8',
-} as const
+import { useMemo } from 'react'
+import { useTheme } from '@/hooks/useTheme'
 
-export const CATEGORICAL = ['#F28C28', '#3B82F6', '#14B8A6', '#8B5CF6', '#64748B'] as const
-
-export function categoricalColor(index: number): string {
-  return CATEGORICAL[index % CATEGORICAL.length] ?? '#64748B'
+/** Resolved chart colours for the active theme (Recharts writes SVG attributes, which can't use var()). */
+export type ChartTheme = {
+  violation: string
+  violationSoft: string
+  total: string
+  totalSoft: string
+  grid: string
+  axis: string
+  label: string
+  surface: string
+  categorical: readonly string[]
+  axisTick: { fill: string; fontSize: number }
+  gridProps: { vertical: false; stroke: string; strokeDasharray: string }
 }
 
-export const AXIS_TICK = { fill: CHART.axis, fontSize: 11 } as const
+function readTokens(): ChartTheme {
+  const css = getComputedStyle(document.documentElement)
+  const v = (name: string) => css.getPropertyValue(name).trim()
+  const axis = v('--text-secondary')
+  const grid = v('--chart-grid')
+  return {
+    violation: v('--primary'),
+    violationSoft: v('--blue-soft'),
+    total: v('--chart-total'),
+    totalSoft: v('--slate-200'),
+    grid,
+    axis,
+    label: v('--text-primary'),
+    surface: v('--surface'),
+    categorical: [v('--tile-blue'), v('--tile-green'), v('--tile-orange'), v('--tile-red'), v('--chart-violet')],
+    axisTick: { fill: axis, fontSize: 11 },
+    gridProps: { vertical: false, stroke: grid, strokeDasharray: '4 4' },
+  }
+}
+
+/** Chart colours from the theme tokens; recomputed whenever the theme changes. */
+export function useChartTheme(): ChartTheme {
+  const { theme } = useTheme()
+  // `theme` is the trigger: data-theme has already changed when it does, so the tokens re-resolve.
+  return useMemo(() => readTokens(), [theme])
+}
+
+export function categoricalColor(palette: ChartTheme, index: number): string {
+  return palette.categorical[index % palette.categorical.length] ?? palette.axis
+}

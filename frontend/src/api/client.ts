@@ -1,13 +1,27 @@
+import i18n from '@/i18n'
 import type { ErrorEnvelope } from './types'
 
-const FALLBACK_MESSAGES: Record<number, string> = {
-  400: 'คำขอไม่ถูกต้อง',
-  404: 'ไม่พบข้อมูลที่ร้องขอ',
-  409: 'มีงานอื่นกำลังทำงานอยู่ กรุณารอสักครู่',
-  422: 'ข้อมูลที่ส่งไม่ถูกต้อง',
-  500: 'เกิดข้อผิดพลาดภายในเซิร์ฟเวอร์',
-  502: 'ไม่สามารถเชื่อมต่อบริการ LLM ได้',
-  503: 'บริการยังไม่พร้อมใช้งาน',
+/** Error codes from the contract envelope (plus client-side NETWORK_ERROR) → `errors.*` translation keys. */
+const CODE_KEYS: Record<string, string> = {
+  NOT_FOUND: 'errors.notFound',
+  BAD_REQUEST: 'errors.badRequest',
+  VALIDATION_ERROR: 'errors.validation',
+  LLM_NOT_CONFIGURED: 'errors.llmNotConfigured',
+  LLM_ERROR: 'errors.llm',
+  DETECTION_RUNNING: 'errors.detectionRunning',
+  INTERNAL_ERROR: 'errors.internal',
+  NETWORK_ERROR: 'errors.network',
+}
+
+/** Fallback keys for non-envelope HTTP errors, by status. */
+const STATUS_KEYS: Record<number, string> = {
+  400: 'errors.badRequest',
+  404: 'errors.notFound',
+  409: 'errors.conflict',
+  422: 'errors.validation',
+  500: 'errors.internal',
+  502: 'errors.llm',
+  503: 'errors.unavailable',
 }
 
 export class ApiError extends Error {
@@ -48,14 +62,36 @@ export async function toApiError(res: Response): Promise<ApiError> {
     body = null
   }
   if (isErrorEnvelope(body)) return new ApiError(res.status, body.error.code, body.error.message)
-  const fallback = FALLBACK_MESSAGES[res.status] ?? `เกิดข้อผิดพลาด (HTTP ${res.status})`
-  return new ApiError(res.status, 'HTTP_ERROR', fallback)
+  return new ApiError(res.status, 'HTTP_ERROR', `HTTP ${res.status}`)
 }
 
+/** A display-ready error: a translated `title` plus the server's own message (if any) as `detail`. */
+export type ErrorInfo = { title: string; detail: string | null }
+
+/**
+ * Translates an error at display time. Known envelope codes map to `errors.*` keys; the server message
+ * (Thai) is kept as detail so nothing is lost. Call during render so a language switch re-translates.
+ */
+export function describeError(err: unknown): ErrorInfo {
+  if (err instanceof ApiError) {
+    if (err.code === 'HTTP_ERROR') {
+      const key = STATUS_KEYS[err.status]
+      return { title: key ? i18n.t(key) : i18n.t('errors.http', { status: err.status }), detail: null }
+    }
+    if (err.code === 'NETWORK_ERROR') return { title: i18n.t('errors.network'), detail: null }
+    const key = CODE_KEYS[err.code]
+    const title = key ? i18n.t(key) : i18n.t('errors.http', { status: err.status })
+    const detail = err.message && err.message !== title ? err.message : null
+    return { title, detail }
+  }
+  if (err instanceof Error && err.message) return { title: err.message, detail: null }
+  return { title: i18n.t('errors.unknown'), detail: null }
+}
+
+/** One-line form of describeError, for toast descriptions. */
 export function toErrorMessage(err: unknown): string {
-  if (err instanceof ApiError) return err.message
-  if (err instanceof Error) return err.message
-  return 'เกิดข้อผิดพลาดที่ไม่ทราบสาเหตุ'
+  const { title, detail } = describeError(err)
+  return detail ? `${title} — ${detail}` : title
 }
 
 export type QueryValue = string | number | boolean | null | undefined
@@ -98,7 +134,7 @@ export async function rawRequest(path: string, opts: RequestOptions = {}): Promi
     })
   } catch (err) {
     if (err instanceof DOMException && err.name === 'AbortError') throw err
-    throw new ApiError(0, 'NETWORK_ERROR', 'ไม่สามารถเชื่อมต่อเซิร์ฟเวอร์ได้ กรุณาตรวจสอบว่า backend ทำงานอยู่')
+    throw new ApiError(0, 'NETWORK_ERROR', 'Network error')
   }
   if (!res.ok) throw await toApiError(res)
   return res

@@ -1,5 +1,6 @@
 import { ImageOff } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 
 export function FrameImage({
@@ -13,6 +14,7 @@ export function FrameImage({
   className?: string
   compact?: boolean
 }) {
+  const { t } = useTranslation()
   const [failed, setFailed] = useState(false)
   const [loaded, setLoaded] = useState(false)
   useEffect(() => {
@@ -24,14 +26,14 @@ export function FrameImage({
     return (
       <div
         className={cn(
-          'flex flex-col items-center justify-center gap-1.5 bg-[repeating-linear-gradient(135deg,#f1f5f9_0_10px,#e2e8f0_10px_20px)] text-slate-400',
+          'flex flex-col items-center justify-center gap-1.5 bg-[repeating-linear-gradient(135deg,var(--color-slate-100)_0_10px,var(--color-slate-200)_10px_20px)] text-slate-400',
           className,
         )}
         aria-label={alt}
         role="img"
       >
         <ImageOff className={compact ? 'size-4' : 'size-7'} />
-        {!compact && <span className="text-xs font-medium">ไม่มีภาพเฟรม</span>}
+        {!compact && <span className="text-xs font-medium">{t('common.noFrame')}</span>}
       </div>
     )
   }

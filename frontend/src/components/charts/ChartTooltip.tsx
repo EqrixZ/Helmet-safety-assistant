@@ -4,7 +4,7 @@ export type TooltipRow = { label: string; value: string; color?: string }
 
 export function ChartTooltipBox({ title, rows }: { title: ReactNode; rows: TooltipRow[] }) {
   return (
-    <div className="min-w-40 rounded-lg border border-slate-200 bg-white/95 px-3 py-2 text-xs shadow-lg backdrop-blur">
+    <div className="min-w-40 rounded-lg border border-slate-200 bg-elevated/95 px-3 py-2 text-xs shadow-lg backdrop-blur">
       <div className="mb-1.5 font-semibold text-slate-800">{title}</div>
       <div className="space-y-1">
         {rows.map((r) => (

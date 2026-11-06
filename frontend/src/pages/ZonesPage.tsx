@@ -1,4 +1,5 @@
 import { MapPinned } from 'lucide-react'
+import { useTranslation } from 'react-i18next'
 import { api } from '@/api/endpoints'
 import { EmptyState } from '@/components/common/EmptyState'
 import { ErrorState } from '@/components/common/ErrorState'
@@ -9,14 +10,15 @@ import { ZoneCard } from '@/components/zones/ZoneCard'
 import { useAsync } from '@/hooks/useAsync'
 
 function RiskLegend() {
+  const { t } = useTranslation()
   const items = [
-    { c: 'bg-rose-500', t: 'สูง ≥ 40%' },
-    { c: 'bg-amber-500', t: 'กลาง 20–39%' },
-    { c: 'bg-emerald-500', t: 'ต่ำ < 20%' },
+    { c: 'bg-tile-red', t: t('zones.legendHigh') },
+    { c: 'bg-tile-orange', t: t('zones.legendMedium') },
+    { c: 'bg-tile-green', t: t('zones.legendLow') },
   ]
   return (
-    <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs text-slate-600 shadow-xs">
-      <span className="font-medium text-slate-500">ระดับความเสี่ยง:</span>
+    <div className="flex items-center gap-3 rounded-lg border border-slate-200 bg-card px-3 py-2 text-xs text-slate-600 shadow-xs">
+      <span className="font-medium text-slate-500">{t('zones.riskLevel')}</span>
       {items.map((i) => (
         <span key={i.t} className="flex items-center gap-1.5">
           <span className={`size-2 rounded-full ${i.c}`} /> {i.t}
@@ -27,12 +29,13 @@ function RiskLegend() {
 }
 
 export function ZonesPage() {
+  const { t } = useTranslation()
   const zones = useAsync((s) => api.zones(s), [])
   return (
     <PageContainer>
       <PageHeader
-        title="โซนพื้นที่"
-        description="ความเสี่ยงของแต่ละโซนจากอัตราการไม่สวมหมวกนิรภัยตลอดช่วงข้อมูล — คลิกการ์ดเพื่อดูเหตุการณ์"
+        title={t('zones.title')}
+        description={t('zones.description')}
         actions={<RiskLegend />}
       />
       {zones.loading && !zones.data ? (
@@ -49,7 +52,7 @@ export function ZonesPage() {
         <ErrorState error={zones.error} onRetry={zones.reload} />
       ) : !zones.data || zones.data.length === 0 ? (
         <Card>
-          <EmptyState icon={MapPinned} title="ยังไม่มีข้อมูลโซน" description="อัปโหลดคลิปและรันการตรวจจับเพื่อเริ่มเก็บข้อมูล" />
+          <EmptyState icon={MapPinned} title={t('zones.emptyTitle')} description={t('zones.emptyDescription')} />
         </Card>
       ) : (
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-3">

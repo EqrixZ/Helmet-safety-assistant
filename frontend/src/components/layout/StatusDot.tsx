@@ -4,9 +4,9 @@ import { cn } from '@/lib/utils'
 export type DotTone = 'ok' | 'warn' | 'down' | 'pending'
 
 const TONES: Record<DotTone, { dot: string; ping: string }> = {
-  ok: { dot: 'bg-emerald-500', ping: 'bg-emerald-400' },
-  warn: { dot: 'bg-amber-500', ping: 'bg-amber-400' },
-  down: { dot: 'bg-rose-500', ping: 'bg-rose-400' },
+  ok: { dot: 'bg-tile-green', ping: 'bg-tile-green' },
+  warn: { dot: 'bg-tile-orange', ping: 'bg-tile-orange' },
+  down: { dot: 'bg-tile-red', ping: 'bg-tile-red' },
   pending: { dot: 'bg-slate-300', ping: 'bg-slate-300' },
 }
 
@@ -28,7 +28,7 @@ export function StatusDot({ label, tone, tooltip }: { label: string; tone: DotTo
       <TooltipTrigger asChild>
         <button
           type="button"
-          className="flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs font-medium text-slate-600 shadow-xs transition hover:border-slate-300"
+          className="flex h-9 items-center gap-2 rounded-full px-3 text-xs font-medium text-slate-600 transition hover:bg-slate-50"
         >
           <PulseDot tone={tone} />
           {label}

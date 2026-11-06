@@ -20,8 +20,8 @@ from typing import Any
 import pandas as pd
 
 from backend import aggregates, config, retrieval
-from backend.models import ChatMessage, DataSource
-from backend.textfmt import hour_label, pct, thai_date, zone_display, zone_name
+from backend.models import ChatMessage, DataSource, Language
+from backend.textfmt import en_date, hour_label, pct, thai_date, zone_display, zone_name
 
 logger = logging.getLogger(__name__)
 
@@ -49,13 +49,33 @@ SYSTEM_PROMPT = """คุณคือ "ผู้ช่วยความปล�
 ==================== ข้อมูลบริบท ====================
 {context}"""
 
+# English variant of the header/rules; the context below the separator is the same (Thai-labelled) block.
+SYSTEM_PROMPT_EN = """You are the "Safety Assistant" for the occupational safety officer of the construction site "{site}".
+A camera system detects workers without hard hats in video clips and records the results as events (1 event = 1 clip).
+The context below is written in Thai; read it, but always answer in English.
+
+Answering rules:
+1. Answer only from the "context data" (ข้อมูลบริบท) below. Never invent numbers, events or regulations.
+2. For counting or statistics questions, use only the numbers in the summary statistics section (สถิติสรุป). The event list is only a relevant subset — never count from it.
+3. If the information is not in the context, say clearly: "This information was not found in the available logs or documents."
+4. When citing an event, copy its date, time, camera and zone exactly as written on that event's line (the zone key, e.g. crane, maps to the English zone name in rule 7). Do not infer them.
+5. Cite regulations only from paragraphs in the regulation section (เอกสารกฎระเบียบที่เกี่ยวข้อง), giving (Source: file name, rule title). Rule titles are in Thai: give the title as written, optionally followed by a short English gloss in parentheses. If a rule lists zones, name every zone that rule lists. If the rule you need is not in the context, say it was not found in the retrieved documents.
+6. Always answer in plain, professional English, as used in formal safety reports. Use markdown when it helps readability.
+7. Refer to zones by these English names (the name already ends in "zone" — do not add another "zone"): {zone_names}
+8. Where appropriate, give practical recommendations that can actually reduce violations.
+
+Definitions: violation (ฝ่าฝืน) = at least 1 person without a hard hat in the clip; person counts are the per-frame maximum in the clip; violation rate = violating events ÷ all events.
+
+==================== ข้อมูลบริบท (context data) ====================
+{context}"""
+
 
 def estimate_tokens(text: str) -> int:
     return math.ceil(len(text) / CHARS_PER_TOKEN)
 
 
-def zone_names_text() -> str:
-    return ", ".join(f"{key}={zone_name(key)}" for key in config.ZONE_LABELS)
+def zone_names_text(language: Language = "th") -> str:
+    return ", ".join(f"{key}={zone_name(key, language)}" for key in config.ZONE_LABELS)
 
 
 def _ranked(rows: list[dict[str, Any]], fmt) -> str:
@@ -127,7 +147,7 @@ def regulations_text(query_text: str) -> tuple[str, list[retrieval.Paragraph], i
 
 
 def build_context(
-    df: pd.DataFrame, data_source: DataSource = "sample", query_texts: Sequence[str] = ()
+    df: pd.DataFrame, data_source: DataSource = "sample", query_texts: Sequence[str] = (), language: Language = "th"
 ) -> tuple[str, dict[str, Any]]:
     """Return ``(context_text, ContextSources)`` for the given log and question text(s)."""
     default_year = int(str(df["date"].max())[:4]) if len(df) else None
@@ -147,19 +167,20 @@ def build_context(
         "data_source": data_source,
         "log_included_full": len(sel.rows) == len(df),
         "log_rows": len(sel.rows),
-        "log_filter": sel.description,
+        "log_filter": sel.describe(language),  # the LLM context itself stays as built above
         "token_estimate": estimate_tokens(text),
     }
     return text, sources
 
 
 def build_messages(
-    history: Sequence[ChatMessage], df: pd.DataFrame, data_source: DataSource
+    history: Sequence[ChatMessage], df: pd.DataFrame, data_source: DataSource, language: Language = "th"
 ) -> tuple[list[dict[str, str]], dict[str, Any]]:
     """OpenAI-style message list: system prompt + context, then the last ``MAX_HISTORY`` turns."""
     user_turns = [m.content for m in history if m.role == "user"][-QUERY_USER_TURNS:]
-    context, sources = build_context(df, data_source, user_turns)
-    system = SYSTEM_PROMPT.format(site=config.site_name(), zone_names=zone_names_text(), context=context)
+    context, sources = build_context(df, data_source, user_turns, language)
+    template = SYSTEM_PROMPT_EN if language == "en" else SYSTEM_PROMPT
+    system = template.format(site=config.site_name(), zone_names=zone_names_text(language), context=context)
     turns = [{"role": m.role, "content": m.content} for m in history[-MAX_HISTORY:]]
     messages = [{"role": "system", "content": system}, *turns]
     sources["token_estimate"] = estimate_tokens("".join(m["content"] for m in messages))
@@ -170,8 +191,14 @@ def build_messages(
     return messages, sources
 
 
-def event_question(event: dict[str, Any]) -> str:
+def event_question(event: dict[str, Any], language: Language = "th") -> str:
     """Pre-filled question asking the assistant about one event."""
+    if language == "en":
+        return (
+            f"Please analyse event {event['event_id']} (camera {event['camera']}, {zone_display(event['zone'], 'en')}, "
+            f"{event['date']} at {event['time']}: {event['no_hardhat']} of {event['total_person']} people without a hard hat) "
+            "— what is the risk, and what action should be taken under the regulations?"
+        )
     return (
         f"ช่วยวิเคราะห์เหตุการณ์ {event['event_id']} (กล้อง {event['camera']} {zone_display(event['zone'])} "
         f"วันที่ {event['date']} เวลา {event['time']} น. พบคนไม่สวมหมวก {event['no_hardhat']} คน "
@@ -179,8 +206,44 @@ def event_question(event: dict[str, Any]) -> str:
     )
 
 
-def suggestions(df: pd.DataFrame, event: dict[str, Any] | None = None) -> list[str]:
-    """Exactly 5 deterministic Thai questions derived from the data."""
+def _suggestions_en(df: pd.DataFrame) -> list[str]:
+    if not len(df):
+        return [
+            "Is there any event data in the system yet?",
+            "Under the law, what are the employer's duties regarding hard-hat use on a construction site?",
+            "What standards must hard hats used in construction meet?",
+            "How should we handle workers found not wearing a hard hat?",
+            "What are some ways to reduce hard-hat violations?",
+        ]
+    latest = str(df["date"].max())
+    top_zone = aggregates.top_n(df, "zone", 1)
+    top_hour = aggregates.top_n(df, "hour", 1)
+    zone_q = (
+        f"Why does the {zone_display(top_zone[0]['key'], 'en')} have the most violations, and how should it be fixed?"
+        if top_zone
+        else "Which zone has the highest risk based on the available data?"
+    )
+    hour_q = (
+        f"Why are violations frequent during {hour_label(top_hour[0]['key'])}, and how should inspections be increased?"
+        if top_hour
+        else "Which time of day has the most violations?"
+    )
+    return [
+        f"How many hard-hat violations were there on {latest} ({en_date(latest)}), and in which zones?",
+        zone_q,
+        hour_q,
+        f"Please summarise the violation trend from {df['date'].min()} to {latest}.",
+        "According to the regulations, what must the employer do when an employee is found without a hard hat?",
+    ]
+
+
+def suggestions(df: pd.DataFrame, event: dict[str, Any] | None = None, language: Language = "th") -> list[str]:
+    """Exactly 5 deterministic questions (Thai or English) derived from the data."""
+    if language == "en":
+        questions = _suggestions_en(df)
+        if event is not None:
+            questions = [event_question(event, "en"), *questions[:4]]
+        return questions
     if not len(df):
         questions = [
             "ตอนนี้มีข้อมูลเหตุการณ์ในระบบแล้วหรือยัง?",

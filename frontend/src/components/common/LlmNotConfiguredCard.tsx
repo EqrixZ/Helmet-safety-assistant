@@ -1,34 +1,36 @@
 import { KeyRound, Settings } from 'lucide-react'
+import { Trans, useTranslation } from 'react-i18next'
 import { Link } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { cn } from '@/lib/utils'
 
-export function LlmNotConfiguredCard({ message, className }: { message?: string; className?: string }) {
+const CODE = <code className="rounded bg-card/70 px-1.5 py-0.5 font-mono text-xs" />
+
+/** `detail` is the server's own message (shown small, under the translated explanation). */
+export function LlmNotConfiguredCard({ detail, className }: { detail?: string | null; className?: string }) {
+  const { t } = useTranslation()
   return (
-    <div className={cn('animate-slide-up rounded-xl border border-amber-200 bg-gradient-to-br from-amber-50 to-orange-50/60 p-5', className)}>
+    <div className={cn('animate-slide-up rounded-xl bg-orange-soft p-6', className)}>
       <div className="flex gap-4">
-        <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-amber-100 text-amber-700">
+        <div className="grid size-10 shrink-0 place-items-center rounded-xl bg-tile-orange text-white">
           <KeyRound className="size-5" />
         </div>
         <div className="min-w-0 flex-1">
-          <h4 className="font-semibold text-amber-900">ยังไม่ได้ตั้งค่าโมเดลภาษา (LLM)</h4>
-          <p className="mt-1 text-sm leading-relaxed text-amber-800/90">
-            {message ?? 'ยังไม่ได้ตั้งค่า LLM_API_KEY — กรุณาใส่ค่าในไฟล์ .env แล้วรีสตาร์ต backend'}
-          </p>
-          <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-amber-900/80">
+          <h4 className="font-semibold text-navy">{t('llmCard.title')}</h4>
+          <p className="mt-1 text-sm leading-relaxed text-slate-600">{t('llmCard.body')}</p>
+          {detail && <p className="mt-1 text-xs leading-relaxed text-slate-500">{detail}</p>}
+          <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-slate-600">
             <li>
-              คัดลอกไฟล์ <code className="rounded bg-white/70 px-1.5 py-0.5 font-mono text-xs">.env.example</code> เป็น{' '}
-              <code className="rounded bg-white/70 px-1.5 py-0.5 font-mono text-xs">.env</code> ที่รากโปรเจกต์
+              <Trans i18nKey="llmCard.step1" components={{ code: CODE }} />
             </li>
             <li>
-              ใส่ค่า <code className="rounded bg-white/70 px-1.5 py-0.5 font-mono text-xs">LLM_API_KEY=...</code> (และ
-              LLM_BASE_URL / LLM_MODEL หากไม่ใช้ OpenAI)
+              <Trans i18nKey="llmCard.step2" components={{ code: CODE }} />
             </li>
-            <li>รีสตาร์ต backend แล้วลองอีกครั้ง</li>
+            <li>{t('llmCard.step3')}</li>
           </ol>
-          <Button asChild variant="outline" size="sm" className="mt-4 border-amber-300 bg-white/80">
+          <Button asChild variant="outline" size="sm" className="mt-4">
             <Link to="/settings">
-              <Settings /> ไปที่หน้าตั้งค่า
+              <Settings /> {t('llmCard.goSettings')}
             </Link>
           </Button>
         </div>

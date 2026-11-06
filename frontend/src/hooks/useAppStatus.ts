@@ -1,7 +1,8 @@
 import { createContext, useContext } from 'react'
 import type { Health } from '@/api/types'
 
-export const DEFAULT_SITE_NAME = 'โครงการก่อสร้างอาคาร A'
+/** Empty until the server answers; displays fall back to the translated `common.defaultSiteName`. */
+export const DEFAULT_SITE_NAME = ''
 
 export type AppStatus = {
   health: Health | undefined

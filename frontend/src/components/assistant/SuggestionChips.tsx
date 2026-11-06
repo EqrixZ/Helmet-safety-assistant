@@ -35,7 +35,7 @@ export function SuggestionChips({
             disabled={disabled}
             onClick={() => onPick(q)}
             style={{ animationDelay: `${i * 60}ms` }}
-            className="animate-slide-up group flex items-start gap-2.5 rounded-xl border border-slate-200 bg-white p-3.5 text-left text-sm text-slate-700 shadow-xs transition hover:-translate-y-0.5 hover:border-primary/40 hover:shadow-md disabled:opacity-50"
+            className="animate-slide-up group flex items-start gap-2.5 rounded-xl bg-card p-4 text-left text-sm text-slate-700 shadow-soft transition hover:-translate-y-0.5 hover:shadow-card disabled:opacity-50"
           >
             <Sparkles className="mt-0.5 size-4 shrink-0 text-primary/70 transition group-hover:text-primary" />
             {q}
@@ -52,7 +52,7 @@ export function SuggestionChips({
           type="button"
           disabled={disabled}
           onClick={() => onPick(q)}
-          className="shrink-0 rounded-full border border-slate-200 bg-white px-3 py-1.5 text-xs text-slate-600 shadow-xs transition hover:border-primary/40 hover:bg-orange-50/60 hover:text-slate-900 disabled:opacity-50"
+          className="shrink-0 rounded-full bg-card px-3.5 py-1.5 text-xs text-slate-600 shadow-soft transition hover:bg-blue-soft hover:text-navy disabled:opacity-50"
         >
           {q}
         </button>

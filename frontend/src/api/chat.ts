@@ -1,5 +1,6 @@
 import { rawRequest } from './client'
-import type { ChatMessage, ChatStreamEvent } from './types'
+import i18n from '@/i18n'
+import type { ChatRequest, ChatStreamEvent } from './types'
 
 function isChatStreamEvent(value: unknown): value is ChatStreamEvent {
   if (typeof value !== 'object' || value === null || !('type' in value)) return false
@@ -29,12 +30,12 @@ function parseBlock(block: string): ChatStreamEvent | null {
  * Resolves when the stream ends; the caller receives a final `done` event.
  */
 export async function streamChat(
-  messages: ChatMessage[],
+  body: ChatRequest,
   onEvent: (event: ChatStreamEvent) => void,
   signal?: AbortSignal,
 ): Promise<void> {
-  const res = await rawRequest('/chat', { method: 'POST', json: { messages }, signal })
-  if (!res.body) throw new Error('เบราว์เซอร์ไม่รองรับการสตรีมข้อมูล')
+  const res = await rawRequest('/chat', { method: 'POST', json: body, signal })
+  if (!res.body) throw new Error(i18n.t('errors.streamUnsupported'))
 
   const reader = res.body.getReader()
   const decoder = new TextDecoder()

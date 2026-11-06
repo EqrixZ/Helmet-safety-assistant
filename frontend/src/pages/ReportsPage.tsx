@@ -1,7 +1,8 @@
 import { FileText, Loader2 } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
-import { ApiError, toErrorMessage } from '@/api/client'
+import { ApiError, describeError, toErrorMessage } from '@/api/client'
 import { api } from '@/api/endpoints'
 import type { Report, ReportType } from '@/api/types'
 import { EmptyState } from '@/components/common/EmptyState'
@@ -13,9 +14,12 @@ import { ReportPaper } from '@/components/reports/ReportPaper'
 import { Card } from '@/components/ui/card'
 import { useAppStatus } from '@/hooks/useAppStatus'
 import { useAsync } from '@/hooks/useAsync'
+import { useLang } from '@/i18n'
 import { shiftIsoDate } from '@/lib/format'
 
 export function ReportsPage() {
+  const { t } = useTranslation()
+  const lang = useLang()
   const { health, siteName } = useAppStatus()
   const maxDate = health?.date_range.max ?? undefined
   const minDate = health?.date_range.min ?? undefined
@@ -24,7 +28,7 @@ export function ReportsPage() {
   const [generating, setGenerating] = useState(false)
   const [opening, setOpening] = useState(false)
   const [report, setReport] = useState<Report | null>(null)
-  const [llmError, setLlmError] = useState<string | null>(null)
+  const [llmError, setLlmError] = useState<ApiError | null>(null)
   const history = useAsync((s) => api.reports(s), [])
 
   // Default date: last day of the log (daily) or its last 7 days (weekly).
@@ -37,13 +41,13 @@ export function ReportsPage() {
     setGenerating(true)
     setLlmError(null)
     try {
-      const r = await api.createReport({ type, date })
+      const r = await api.createReport({ type, date, language: lang })
       setReport(r)
       history.reload()
-      toast.success('สร้างรายงานเรียบร้อย', { description: r.name })
+      toast.success(t('reports.generated'), { description: r.name })
     } catch (err) {
-      if (err instanceof ApiError && err.isLlmNotConfigured) setLlmError(err.message)
-      else toast.error('สร้างรายงานไม่สำเร็จ', { description: toErrorMessage(err) })
+      if (err instanceof ApiError && err.isLlmNotConfigured) setLlmError(err)
+      else toast.error(t('reports.generateFailed'), { description: toErrorMessage(err) })
     } finally {
       setGenerating(false)
     }
@@ -54,7 +58,7 @@ export function ReportsPage() {
     try {
       setReport(await api.report(name))
     } catch (err) {
-      toast.error('เปิดรายงานไม่สำเร็จ', { description: toErrorMessage(err) })
+      toast.error(t('reports.openFailed'), { description: toErrorMessage(err) })
     } finally {
       setOpening(false)
     }
@@ -63,8 +67,8 @@ export function ReportsPage() {
   return (
     <PageContainer>
       <PageHeader
-        title="รายงานความปลอดภัย"
-        description="สร้างรายงานรายวันหรือรายสัปดาห์ พร้อมบทวิเคราะห์และข้อเสนอแนะจาก AI — ดาวน์โหลดหรือพิมพ์เป็น PDF ได้ทันที"
+        title={t('reports.title')}
+        description={t('reports.description')}
       />
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-[340px_minmax(0,1fr)]">
         <div className="space-y-4">
@@ -79,7 +83,7 @@ export function ReportsPage() {
             minDate={minDate}
           />
           {(llmError !== null || health?.llm_configured === false) && (
-            <LlmNotConfiguredCard message={llmError ?? undefined} />
+            <LlmNotConfiguredCard detail={llmError ? describeError(llmError).detail : null} />
           )}
           <ReportHistory
             items={history.data}
@@ -101,8 +105,8 @@ export function ReportsPage() {
             <Card className="grid min-h-[60vh] place-items-center border-dashed">
               <EmptyState
                 icon={FileText}
-                title={generating ? 'กำลังเตรียมรายงาน…' : 'ยังไม่ได้เลือกรายงาน'}
-                description="เลือกประเภทและวันที่ แล้วกด “สร้างรายงาน” หรือเปิดรายงานเดิมจากรายการด้านซ้าย"
+                title={generating ? t('reports.preparing') : t('reports.noneSelected')}
+                description={t('reports.emptyHint')}
               />
             </Card>
           )}

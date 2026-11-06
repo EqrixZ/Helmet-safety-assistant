@@ -20,6 +20,7 @@ from starlette.exceptions import HTTPException as StarletteHTTPException
 from backend import aggregates, assistant, config, data, detect_runner, llm, regulations, report, uploads
 from backend.frame_utils import VIDEO_EXTENSIONS, parse_clip_filename
 from backend.models import (
+    Language,
     DATE_PATTERN,
     AggregateRow,
     ChatRequest,
@@ -252,7 +253,7 @@ async def chat(body: ChatRequest) -> StreamingResponse:
     if body.messages[-1].role != "user":
         raise bad_request("ข้อความล่าสุดต้องเป็นคำถามจากผู้ใช้")
     log = data.load_events()
-    messages, sources = await run_in_threadpool(assistant.build_messages, body.messages, log.df, log.source)
+    messages, sources = await run_in_threadpool(assistant.build_messages, body.messages, log.df, log.source, body.language)
 
     async def events() -> AsyncIterator[str]:
         yield _sse({"type": "sources", "sources": sources})
@@ -271,20 +272,21 @@ async def chat(body: ChatRequest) -> StreamingResponse:
 
 
 @app.get("/api/chat/context", response_model=ContextSources, tags=["assistant"])
-def chat_context() -> dict[str, Any]:
+def chat_context(language: Annotated[Language, Query()] = "th") -> dict[str, Any]:
     log = data.load_events()
-    return assistant.build_context(log.df, log.source)[1]
+    return assistant.build_context(log.df, log.source, language=language)[1]
 
 
 @app.post("/api/chat/suggestions", response_model=Suggestions, tags=["assistant"])
 def chat_suggestions(body: SuggestionsRequest | None = None) -> dict[str, list[str]]:
     df = data.load_events().df
+    language = body.language if body is not None else "th"
     event = None
     if body is not None and body.event_id:
         event = data.get_event(df, body.event_id)
         if event is None:
             raise not_found(f"ไม่พบเหตุการณ์ {body.event_id}")
-    return {"questions": assistant.suggestions(df, event)}
+    return {"questions": assistant.suggestions(df, event, language)}
 
 
 # --- reports ----------------------------------------------------------------------
@@ -293,7 +295,8 @@ def chat_suggestions(body: SuggestionsRequest | None = None) -> dict[str, list[s
 def create_report(body: ReportRequest) -> dict[str, Any]:
     if not llm.is_configured():
         raise llm.LLMNotConfigured()
-    return report.daily_report(body.date) if body.type == "daily" else report.weekly_report(body.date)
+    build = report.daily_report if body.type == "daily" else report.weekly_report
+    return build(body.date, body.language)
 
 
 @app.get("/api/reports", response_model=list[ReportMeta], tags=["reports"])

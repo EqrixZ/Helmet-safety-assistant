@@ -1,6 +1,7 @@
 import * as DialogPrimitive from '@radix-ui/react-dialog'
 import { XIcon } from 'lucide-react'
 import type { ComponentProps } from 'react'
+import { useTranslation } from 'react-i18next'
 import { cn } from '@/lib/utils'
 
 export const Sheet = DialogPrimitive.Root
@@ -13,12 +14,13 @@ export function SheetContent({
   side = 'right',
   ...props
 }: ComponentProps<typeof DialogPrimitive.Content> & { side?: 'right' | 'left' }) {
+  const { t } = useTranslation()
   return (
     <DialogPrimitive.Portal>
       <DialogPrimitive.Overlay className="animate-fade-in fixed inset-0 z-50 bg-slate-950/40 backdrop-blur-[2px]" />
       <DialogPrimitive.Content
         className={cn(
-          'fixed inset-y-0 z-50 flex h-full flex-col bg-white shadow-2xl outline-none transition ease-out',
+          'fixed inset-y-0 z-50 flex h-full flex-col bg-card shadow-2xl outline-none transition ease-out',
           side === 'right'
             ? 'right-0 w-full max-w-xl border-l animate-[sheet-in-right_0.3s_cubic-bezier(0.16,1,0.3,1)]'
             : 'left-0 w-72 border-r animate-[sheet-in-left_0.3s_cubic-bezier(0.16,1,0.3,1)]',
@@ -29,7 +31,7 @@ export function SheetContent({
         {children}
         <DialogPrimitive.Close className="absolute top-4 right-4 rounded-md p-1 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700 focus:outline-none">
           <XIcon className="size-5" />
-          <span className="sr-only">ปิด</span>
+          <span className="sr-only">{t('common.close')}</span>
         </DialogPrimitive.Close>
       </DialogPrimitive.Content>
     </DialogPrimitive.Portal>

@@ -14,7 +14,7 @@ PORT    ?= 8000
 
 .DEFAULT_GOAL := help
 
-.PHONY: help install venv backend frontend dev detect eval eval-mock test build up down logs clean
+.PHONY: help install venv backend frontend dev prepare-clips detect eval eval-mock test build up down logs clean
 
 help: ## แสดงรายการคำสั่งทั้งหมด
 	@echo "Helmet Safety Assistant: คำสั่งที่ใช้ได้"
@@ -46,7 +46,10 @@ dev: ## รัน backend + frontend พร้อมกัน (กด Ctrl+C เ
 		( cd frontend && $(NPM) run dev ) & \
 		wait
 
-detect: ## ประมวลผลคลิปใน data/clips/ ด้วย YOLOv8 แล้วเขียน data/events.csv
+prepare-clips: ## แปลงวิดีโอใน data/raw_clips/ เป็นคลิปแบบกล้องวงจรปิดใน data/clips/ (ต้องมี imageio-ffmpeg หรือ ffmpeg)
+	$(PY) scripts/prepare_clips.py
+
+detect: ## ประมวลผลคลิปใน data/clips/ ด้วย YOLO26s แล้วเขียน data/events.csv
 	$(PY) -m backend.detector
 
 eval: ## ประเมินความแม่นยำของผู้ช่วย AI (ใช้ LLM จริงถ้าตั้งค่า LLM_API_KEY ไว้)

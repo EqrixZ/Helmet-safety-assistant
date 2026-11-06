@@ -1,5 +1,6 @@
 import { AlertTriangle, CheckCircle2, Film, Loader2, Video } from 'lucide-react'
 import { useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { toast } from 'sonner'
 import { toErrorMessage } from '@/api/client'
 import { api } from '@/api/endpoints'
@@ -9,11 +10,12 @@ import { FileDropzone } from '@/components/common/FileDropzone'
 import { Badge } from '@/components/ui/badge'
 import { Skeleton } from '@/components/ui/skeleton'
 import { useAsync } from '@/hooks/useAsync'
-import { cameraLabel, formatBytes, formatThaiDateTime, zoneLabel } from '@/lib/format'
+import { cameraLabel, formatBytes, formatDateTime, zoneLabel } from '@/lib/format'
 import { SectionCard } from './SectionCard'
 import { toastUploadResult } from './UploadResultToast'
 
 export function ClipsCard() {
+  const { t } = useTranslation()
   const clips = useAsync((s) => api.clips(s), [])
   const [uploading, setUploading] = useState(false)
 
@@ -23,7 +25,7 @@ export function ClipsCard() {
       toastUploadResult(await api.uploadClips(files))
       clips.reload()
     } catch (err) {
-      toast.error('อัปโหลดไม่สำเร็จ', { description: toErrorMessage(err) })
+      toast.error(t('settings.upload.failed'), { description: toErrorMessage(err) })
     } finally {
       setUploading(false)
     }
@@ -32,26 +34,27 @@ export function ClipsCard() {
   return (
     <SectionCard
       icon={Video}
-      title="คลิปวิดีโอจากกล้อง"
-      description="อัปโหลดคลิปเพื่อให้ระบบตรวจจับการสวมหมวกนิรภัย"
-      action={clips.data && <Badge variant="secondary">{clips.data.length} คลิป</Badge>}
+      title={t('settings.clips.title')}
+      description={t('settings.clips.description')}
+      action={clips.data && <Badge variant="secondary">{t('settings.clips.count', { count: clips.data.length })}</Badge>}
     >
       <FileDropzone
         accept=".mp4,.mov,.avi,.mkv,video/*"
         onFiles={(f) => void upload(f)}
         disabled={uploading}
-        title={uploading ? 'กำลังอัปโหลด…' : 'ลากไฟล์วิดีโอมาวางที่นี่'}
+        title={uploading ? t('settings.upload.uploading') : t('settings.clips.drop')}
         hint={
           <span>
-            รูปแบบชื่อไฟล์ <code className="rounded bg-white px-1 font-mono text-[11px] text-slate-700 ring-1 ring-slate-200">cam{'{ID}'}_{'{zone}'}_{'{YYYY-MM-DD}'}_{'{HHMM}'}.mp4</code>
+            {t('settings.clips.nameFormat')}{' '}
+            <code className="rounded bg-card px-1 font-mono text-[11px] text-slate-700 ring-1 ring-slate-200">cam{'{ID}'}_{'{zone}'}_{'{YYYY-MM-DD}'}_{'{HHMM}'}.mp4</code>
             <br />
-            ตัวอย่าง <code className="font-mono text-[11px] text-primary">cam2_crane_2026-09-29_1405.mp4</code>
+            {t('settings.clips.example')} <code className="font-mono text-[11px] text-primary">cam2_crane_2026-09-29_1405.mp4</code>
           </span>
         }
       />
       {uploading && (
         <div className="mt-3 flex items-center gap-2 text-xs text-slate-500">
-          <Loader2 className="size-3.5 animate-spin" /> กำลังอัปโหลดไฟล์…
+          <Loader2 className="size-3.5 animate-spin" /> {t('settings.clips.uploadingFiles')}
         </div>
       )}
       <div className="mt-4">
@@ -64,7 +67,12 @@ export function ClipsCard() {
         ) : clips.error ? (
           <ErrorState error={clips.error} onRetry={clips.reload} className="py-6" />
         ) : !clips.data || clips.data.length === 0 ? (
-          <EmptyState icon={Film} title="ยังไม่มีคลิป" description="อัปโหลดคลิปจากกล้องวงจรปิดเพื่อเริ่มต้น" className="py-6" />
+          <EmptyState
+            icon={Film}
+            title={t('settings.clips.emptyTitle')}
+            description={t('settings.clips.emptyDescription')}
+            className="py-6"
+          />
         ) : (
           <ul className="scrollbar-thin max-h-72 divide-y divide-slate-100 overflow-y-auto rounded-lg border border-slate-200">
             {clips.data.map((c) => (
@@ -76,16 +84,16 @@ export function ClipsCard() {
                   </div>
                   <div className="mt-0.5 truncate text-[11px] text-slate-500">
                     {c.parsed.matched
-                      ? `${cameraLabel(c.parsed.camera)} · ${zoneLabel(c.parsed.zone)} · ${formatThaiDateTime(c.parsed.datetime)}`
-                      : `ใช้เวลาไฟล์: ${formatThaiDateTime(c.parsed.datetime)}`}{' '}
+                      ? `${cameraLabel(c.parsed.camera)} · ${zoneLabel(c.parsed.zone)} · ${formatDateTime(c.parsed.datetime)}`
+                      : t('settings.clips.fileTime', { date: formatDateTime(c.parsed.datetime) })}{' '}
                     · {formatBytes(c.size)}
                   </div>
                 </div>
                 {c.parsed.matched ? (
-                  <CheckCircle2 className="size-4 shrink-0 text-emerald-500" aria-label="ชื่อไฟล์ถูกต้อง" />
+                  <CheckCircle2 className="size-4 shrink-0 text-tile-green" aria-label={t('settings.clips.validName')} />
                 ) : (
                   <Badge variant="warning" className="shrink-0">
-                    <AlertTriangle /> ไม่ตรงรูปแบบ
+                    <AlertTriangle /> {t('settings.clips.invalidName')}
                   </Badge>
                 )}
               </li>

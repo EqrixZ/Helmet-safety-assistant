@@ -43,13 +43,14 @@ class Query:
     event_ids: set[str] = field(default_factory=set)   # "EVT-0002"
     violation: bool = False
 
-    def describe(self) -> str:
-        """Thai summary of the filters, for the sources panel."""
-        parts = [f"รหัส {', '.join(sorted(self.event_ids))}"] if self.event_ids else []
-        parts += [f"วันที่ {', '.join(sorted(self.dates))}"] if self.dates else []
-        parts += [", ".join(zone_name(z) for z in sorted(self.zones))] if self.zones else []
-        parts += [f"กล้อง {', '.join(sorted(self.cameras))}"] if self.cameras else []
-        parts += ["เฉพาะที่ฝ่าฝืน"] if self.violation else []
+    def describe(self, language: str = "th") -> str:
+        """Summary of the filters (Thai by default; "en" for the English sources panel)."""
+        en = language == "en"
+        parts = [f"{'IDs' if en else 'รหัส'} {', '.join(sorted(self.event_ids))}"] if self.event_ids else []
+        parts += [f"{'Date' if en else 'วันที่'} {', '.join(sorted(self.dates))}"] if self.dates else []
+        parts += [", ".join(zone_name(z, language) for z in sorted(self.zones))] if self.zones else []
+        parts += [f"{'Camera' if en else 'กล้อง'} {', '.join(sorted(self.cameras))}"] if self.cameras else []
+        parts += ["violations only" if en else "เฉพาะที่ฝ่าฝืน"] if self.violation else []
         return " · ".join(parts)
 
     @property
@@ -100,7 +101,19 @@ class RowSelection:
     rows: pd.DataFrame
     matched: int          # rows matching the filters (before the cap); 0 when falling back
     fallback: bool
-    description: str
+    query: Query
+
+    def describe(self, language: str = "th") -> str:
+        """How the rows were chosen, for the context header (Thai) and the sources panel."""
+        if not self.fallback:
+            return self.query.describe(language)
+        if language == "en":
+            return f"No specific filter — showing the {len(self.rows)} latest violations"
+        return f"ไม่พบเงื่อนไขเฉพาะ — แสดงการฝ่าฝืนล่าสุด {len(self.rows)} รายการ"
+
+    @property
+    def description(self) -> str:
+        return self.describe("th")
 
 
 def select_rows(df: pd.DataFrame, query: Query) -> RowSelection:
@@ -122,9 +135,9 @@ def select_rows(df: pd.DataFrame, query: Query) -> RowSelection:
             mask |= df["event_id"].isin(query.event_ids)
         hits = newest[mask.reindex(newest.index)]
         if len(hits):
-            return RowSelection(hits.head(MAX_ROWS), len(hits), False, query.describe())
+            return RowSelection(hits.head(MAX_ROWS), len(hits), False, query)
     latest = newest[newest["violation"]].head(FALLBACK_ROWS)
-    return RowSelection(latest, 0, True, f"ไม่พบเงื่อนไขเฉพาะ — แสดงการฝ่าฝืนล่าสุด {len(latest)} รายการ")
+    return RowSelection(latest, 0, True, query)
 
 
 # --- regulation paragraphs ---------------------------------------------------------------

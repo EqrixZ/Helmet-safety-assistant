@@ -1,5 +1,6 @@
 import { Activity, BarChart3, Camera, Clock, MapPin, Percent, ShieldAlert, TrendingUp } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { useTranslation } from 'react-i18next'
 import { api } from '@/api/endpoints'
 import type { DateRange } from '@/api/types'
 import { CameraDonutChart } from '@/components/charts/CameraDonutChart'
@@ -7,7 +8,7 @@ import { ChartCard, LegendItem } from '@/components/charts/ChartCard'
 import { DailyViolationsChart } from '@/components/charts/DailyViolationsChart'
 import { HourBarChart } from '@/components/charts/HourBarChart'
 import { ZoneBarChart } from '@/components/charts/ZoneBarChart'
-import { CHART } from '@/components/charts/palette'
+import { useChartTheme } from '@/components/charts/palette'
 import { DateRangePicker } from '@/components/common/DateRangePicker'
 import { ErrorState } from '@/components/common/ErrorState'
 import { PageContainer, PageHeader } from '@/components/common/PageHeader'
@@ -16,16 +17,21 @@ import { KpiCard } from '@/components/dashboard/KpiCard'
 import { RecentViolations } from '@/components/dashboard/RecentViolations'
 import { useAppStatus } from '@/hooks/useAppStatus'
 import { useAsync } from '@/hooks/useAsync'
-import { formatHourRange, formatNumber, formatPercent, formatThaiDate, shiftIsoDate, zoneLabel } from '@/lib/format'
+import { formatDate, formatHourRange, formatNumber, formatPercent, shiftIsoDate, zoneLabel } from '@/lib/format'
 
-const Legend2 = (
-  <div className="flex items-center gap-3">
-    <LegendItem color={CHART.violation} label="ละเมิด" />
-    <LegendItem color={CHART.totalSoft} label="ทั้งหมด" />
-  </div>
-)
+function Legend2() {
+  const c = useChartTheme()
+  const { t } = useTranslation()
+  return (
+    <div className="flex items-center gap-3">
+      <LegendItem color={c.violation} label={t('charts.violations')} />
+      <LegendItem color={c.totalSoft} label={t('charts.total')} />
+    </div>
+  )
+}
 
 export function DashboardPage() {
+  const { t } = useTranslation()
   const { health, healthChecked } = useAppStatus()
   const bounds = health?.date_range ?? { min: null, max: null }
   const [range, setRange] = useState<DateRange>({})
@@ -53,13 +59,13 @@ export function DashboardPage() {
   return (
     <PageContainer>
       <PageHeader
-        title="แดชบอร์ดความปลอดภัย"
+        title={t('dashboard.title')}
         description={
           <span className="flex flex-wrap items-center gap-2">
-            ภาพรวมการสวมหมวกนิรภัย
+            {t('dashboard.subtitle')}
             {st?.from && st.to && (
               <span className="text-slate-400">
-                ({formatThaiDate(st.from)} – {formatThaiDate(st.to)})
+                ({formatDate(st.from)} – {formatDate(st.to)})
               </span>
             )}
             <DataSourceBadge source={st?.data_source ?? health?.data_source} />
@@ -71,19 +77,19 @@ export function DashboardPage() {
       {stats.error ? (
         <ErrorState error={stats.error} onRetry={stats.reload} />
       ) : (
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-4">
           <KpiCard
-            label="เหตุการณ์ทั้งหมด"
+            label={t('dashboard.kpi.totalEvents')}
             icon={Activity}
-            accent="slate"
+            accent="blue"
             loading={kpiLoading}
             value={formatNumber(st?.total_events ?? 0)}
             trend={st?.trend.events}
           />
           <KpiCard
-            label="การละเมิด (ไม่สวมหมวก)"
+            label={t('dashboard.kpi.violations')}
             icon={ShieldAlert}
-            accent="rose"
+            accent="red"
             loading={kpiLoading}
             value={formatNumber(st?.total_violations ?? 0)}
             trend={st?.trend.violations}
@@ -91,7 +97,7 @@ export function DashboardPage() {
             delay={60}
           />
           <KpiCard
-            label="อัตราการละเมิด"
+            label={t('dashboard.kpi.rate')}
             icon={Percent}
             accent="orange"
             loading={kpiLoading}
@@ -101,40 +107,45 @@ export function DashboardPage() {
             delay={120}
           />
           <KpiCard
-            label="โซนที่ละเมิดมากที่สุด"
+            label={t('dashboard.kpi.topZone')}
             icon={MapPin}
-            accent="amber"
+            accent="green"
             loading={kpiLoading}
             value={st?.top_zone ? zoneLabel(st.top_zone.key) : '—'}
             sub={
               st?.top_zone
-                ? `${st.top_zone.violations} ครั้ง${st.top_hour ? ` · ช่วงเสี่ยง ${formatHourRange(st.top_hour.key)}` : ''}`
-                : 'ไม่พบการละเมิด'
+                ? [
+                    t('dashboard.kpi.topZoneCount', { count: st.top_zone.violations }),
+                    st.top_hour ? t('dashboard.kpi.peakHour', { range: formatHourRange(st.top_hour.key) }) : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' · ')
+                : t('dashboard.kpi.noViolations')
             }
             delay={180}
           />
         </div>
       )}
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <ChartCard
           className="xl:col-span-2"
-          title="แนวโน้มการละเมิดรายวัน"
-          description="จำนวนครั้งที่ตรวจพบผู้ไม่สวมหมวก เทียบกับเหตุการณ์ทั้งหมด"
-          icon={TrendingUp}
+          title={t('dashboard.daily.title')}
+          description={t('dashboard.daily.description')}
+          viewAllTo="/events"
           loading={byDay.loading && !byDay.data}
           error={byDay.error}
           onRetry={byDay.reload}
           empty={byDay.data?.length === 0}
           emptyIcon={TrendingUp}
           height={280}
-          legend={Legend2}
+          legend={<Legend2 />}
         >
           <DailyViolationsChart data={byDay.data ?? []} />
         </ChartCard>
         <ChartCard
-          title="สัดส่วนการละเมิดตามกล้อง"
-          icon={Camera}
+          title={t('dashboard.byCamera')}
+          viewAllTo="/events"
           loading={byCamera.loading && !byCamera.data}
           error={byCamera.error}
           onRetry={byCamera.reload}
@@ -146,30 +157,30 @@ export function DashboardPage() {
         </ChartCard>
       </div>
 
-      <div className="grid grid-cols-1 gap-4 xl:grid-cols-3">
+      <div className="grid grid-cols-1 gap-6 xl:grid-cols-3">
         <ChartCard
-          title="การละเมิดตามโซน"
-          icon={BarChart3}
+          title={t('dashboard.byZone')}
+          viewAllTo="/zones"
           loading={byZone.loading && !byZone.data}
           error={byZone.error}
           onRetry={byZone.reload}
           empty={byZone.data?.length === 0}
           emptyIcon={BarChart3}
           height={340}
-          legend={Legend2}
+          legend={<Legend2 />}
         >
           <ZoneBarChart data={byZone.data ?? []} />
         </ChartCard>
         <ChartCard
-          title="การละเมิดตามช่วงเวลา"
-          icon={Clock}
+          title={t('dashboard.byHour')}
+          viewAllTo="/events"
           loading={byHour.loading && !byHour.data}
           error={byHour.error}
           onRetry={byHour.reload}
           empty={byHour.data?.length === 0}
           emptyIcon={Clock}
           height={340}
-          legend={Legend2}
+          legend={<Legend2 />}
         >
           <HourBarChart data={byHour.data ?? []} />
         </ChartCard>
